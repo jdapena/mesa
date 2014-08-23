@@ -71,6 +71,7 @@ struct gl_format_info
    GLubyte BytesPerBlock;
 
    uint8_t Swizzle[4];
+   uint32_t ArrayFormat;
 };
 
 #include "format_info.c"
@@ -269,6 +270,25 @@ _mesa_get_format_swizzle(mesa_format format, uint8_t swizzle_out[4])
    memcpy(swizzle_out, info->Swizzle, sizeof(info->Swizzle));
 }
 
+uint32_t
+_mesa_format_to_array_format(mesa_format format)
+{
+   const struct gl_format_info *info = _mesa_get_format_info(format);
+   return info->ArrayFormat;
+}
+
+mesa_format
+_mesa_format_from_array_format(uint32_t array_format)
+{
+   unsigned f;
+
+   assert(array_format & MESA_ARRAY_FORMAT_BIT);
+   for (f = 1; f < MESA_FORMAT_COUNT; ++f)
+      if (_mesa_get_format_info(f)->ArrayFormat == array_format)
+         return f;
+
+   return MESA_FORMAT_NONE;
+}
 
 /** Is the given format a compressed format? */
 GLboolean

@@ -81,6 +81,52 @@ enum {
    MESA_FORMAT_SWIZZLE_NONE = 6,
 };
 
+enum {
+   /* Data types */
+   MESA_ARRAY_FORMAT_TYPE_UBYTE = 0x0,
+   MESA_ARRAY_FORMAT_TYPE_USHORT = 0x1,
+   MESA_ARRAY_FORMAT_TYPE_UINT = 0x2,
+   MESA_ARRAY_FORMAT_TYPE_BYTE = 0x4,
+   MESA_ARRAY_FORMAT_TYPE_SHORT = 0x5,
+   MESA_ARRAY_FORMAT_TYPE_INT = 0x6,
+   MESA_ARRAY_FORMAT_TYPE_HALF = 0xd,
+   MESA_ARRAY_FORMAT_TYPE_FLOAT = 0xe,
+
+   /* Not technically data types, but normalized versions */
+   MESA_ARRAY_FORMAT_TYPE_UNBYTE = 0x10,
+   MESA_ARRAY_FORMAT_TYPE_UNSHORT = 0x11,
+   MESA_ARRAY_FORMAT_TYPE_UNINT = 0x12,
+   MESA_ARRAY_FORMAT_TYPE_NBYTE = 0x14,
+   MESA_ARRAY_FORMAT_TYPE_NSHORT = 0x15,
+   MESA_ARRAY_FORMAT_TYPE_NINT = 0x16,
+
+   MESA_ARRAY_FORMAT_TYPE_IS_SIGNED = 0x4,
+   MESA_ARRAY_FORMAT_TYPE_IS_FLOAT = 0x8,
+   MESA_ARRAY_FORMAT_TYPE_NORMALIZED = 0x10,
+   MESA_ARRAY_FORMAT_DATATYPE_MASK = 0xf,
+   MESA_ARRAY_FORMAT_TYPE_MASK = 0x1f,
+   MESA_ARRAY_FORMAT_TYPE_SIZE_MASK = 0x3,
+   MESA_ARRAY_FORMAT_NUM_CHANS_MASK = 0xe0,
+   MESA_ARRAY_FORMAT_SWIZZLE_X_MASK = 0x00700,
+   MESA_ARRAY_FORMAT_SWIZZLE_Y_MASK = 0x03800,
+   MESA_ARRAY_FORMAT_SWIZZLE_Z_MASK = 0x1c000,
+   MESA_ARRAY_FORMAT_SWIZZLE_W_MASK = 0xe0000,
+   MESA_ARRAY_FORMAT_BIT = 0x80000000
+};
+
+#define MESA_ARRAY_FORMAT(SIZE, SIGNED, IS_FLOAT, NORM, NUM_CHANS, \
+      SWIZZLE_X, SWIZZLE_Y, SWIZZLE_Z, SWIZZLE_W) (                \
+   (((SIZE)           ) & MESA_ARRAY_FORMAT_TYPE_SIZE_MASK) |      \
+   (((SIGNED)    << 2 ) & MESA_ARRAY_FORMAT_TYPE_IS_SIGNED) |      \
+   (((IS_FLOAT)  << 3 ) & MESA_ARRAY_FORMAT_TYPE_IS_FLOAT) |       \
+   (((NORM)      << 4 ) & MESA_ARRAY_FORMAT_TYPE_NORMALIZED) |     \
+   (((NUM_CHANS) << 5 ) & MESA_ARRAY_FORMAT_NUM_CHANS_MASK) |      \
+   (((SWIZZLE_X) << 8 ) & MESA_ARRAY_FORMAT_SWIZZLE_X_MASK) |      \
+   (((SWIZZLE_Y) << 11) & MESA_ARRAY_FORMAT_SWIZZLE_Y_MASK) |      \
+   (((SWIZZLE_Z) << 14) & MESA_ARRAY_FORMAT_SWIZZLE_Z_MASK) |      \
+   (((SWIZZLE_Z) << 17) & MESA_ARRAY_FORMAT_SWIZZLE_W_MASK) |      \
+   MESA_ARRAY_FORMAT_BIT)
+
 /**
  * Mesa texture/renderbuffer image formats.
  */
@@ -463,6 +509,12 @@ _mesa_get_format_block_size(mesa_format format, GLuint *bw, GLuint *bh);
 
 extern void
 _mesa_get_format_swizzle(mesa_format format, uint8_t swizzle_out[4]);
+
+extern uint32_t
+_mesa_format_to_array_format(mesa_format format);
+
+extern mesa_format
+_mesa_format_from_array_format(uint32_t array_format);
 
 extern GLboolean
 _mesa_is_format_compressed(mesa_format format);
