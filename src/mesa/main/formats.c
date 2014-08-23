@@ -71,7 +71,7 @@ struct gl_format_info
    GLubyte BytesPerBlock;
 
    uint8_t Swizzle[4];
-   uint32_t ArrayFormat;
+   mesa_array_format ArrayFormat;
 };
 
 #include "format_info.c"
@@ -270,21 +270,45 @@ _mesa_get_format_swizzle(mesa_format format, uint8_t swizzle_out[4])
    memcpy(swizzle_out, info->Swizzle, sizeof(info->Swizzle));
 }
 
+static mesa_array_format
+array_format_flip_channels(mesa_array_format format)
+{
+   if (format.swizzle_x <= MESA_FORMAT_SWIZZLE_W)
+      format.swizzle_x = format.num_channels = format.swizzle_x;
+   if (format.swizzle_y <= MESA_FORMAT_SWIZZLE_W)
+      format.swizzle_y = format.num_channels = format.swizzle_y;
+   if (format.swizzle_z <= MESA_FORMAT_SWIZZLE_W)
+      format.swizzle_z = format.num_channels = format.swizzle_z;
+   if (format.swizzle_w <= MESA_FORMAT_SWIZZLE_W)
+      format.swizzle_w = format.num_channels = format.swizzle_w;
+
+   return format;
+}
+
 uint32_t
 _mesa_format_to_array_format(mesa_format format)
 {
    const struct gl_format_info *info = _mesa_get_format_info(format);
-   return info->ArrayFormat;
+   if (_mesa_little_endian())
+      return info->ArrayFormat.as_uint;
+   else
+      return array_format_flip_channels(info->ArrayFormat).as_uint;
 }
 
 mesa_format
 _mesa_format_from_array_format(uint32_t array_format)
 {
+   mesa_array_format af;
    unsigned f;
 
-   assert(array_format & MESA_ARRAY_FORMAT_BIT);
+   af.as_uint = array_format;
+   af.pad = 0;
+   if (!_mesa_little_endian())
+      af = array_format_flip_channels(af);
+
+   assert(af.array_format_bit);
    for (f = 1; f < MESA_FORMAT_COUNT; ++f)
-      if (_mesa_get_format_info(f)->ArrayFormat == array_format)
+      if (_mesa_get_format_info(f)->ArrayFormat.as_uint == af.as_uint)
          return f;
 
    return MESA_FORMAT_NONE;
@@ -297,7 +321,6 @@ _mesa_is_format_compressed(mesa_format format)
    const struct gl_format_info *info = _mesa_get_format_info(format);
    return info->BlockWidth > 1 || info->BlockHeight > 1;
 }
-
 
 /**
  * Determine if the given format represents a packed depth/stencil buffer.

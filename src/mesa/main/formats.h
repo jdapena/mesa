@@ -81,8 +81,7 @@ enum {
    MESA_FORMAT_SWIZZLE_NONE = 6,
 };
 
-enum {
-   /* Data types */
+enum  mesa_array_format_datatype {
    MESA_ARRAY_FORMAT_TYPE_UBYTE = 0x0,
    MESA_ARRAY_FORMAT_TYPE_USHORT = 0x1,
    MESA_ARRAY_FORMAT_TYPE_UINT = 0x2,
@@ -92,40 +91,44 @@ enum {
    MESA_ARRAY_FORMAT_TYPE_HALF = 0xd,
    MESA_ARRAY_FORMAT_TYPE_FLOAT = 0xe,
 
-   /* Not technically data types, but normalized versions */
-   MESA_ARRAY_FORMAT_TYPE_UNBYTE = 0x10,
-   MESA_ARRAY_FORMAT_TYPE_UNSHORT = 0x11,
-   MESA_ARRAY_FORMAT_TYPE_UNINT = 0x12,
-   MESA_ARRAY_FORMAT_TYPE_NBYTE = 0x14,
-   MESA_ARRAY_FORMAT_TYPE_NSHORT = 0x15,
-   MESA_ARRAY_FORMAT_TYPE_NINT = 0x16,
-
    MESA_ARRAY_FORMAT_TYPE_IS_SIGNED = 0x4,
    MESA_ARRAY_FORMAT_TYPE_IS_FLOAT = 0x8,
-   MESA_ARRAY_FORMAT_TYPE_NORMALIZED = 0x10,
-   MESA_ARRAY_FORMAT_DATATYPE_MASK = 0xf,
-   MESA_ARRAY_FORMAT_TYPE_MASK = 0x1f,
-   MESA_ARRAY_FORMAT_TYPE_SIZE_MASK = 0x3,
-   MESA_ARRAY_FORMAT_NUM_CHANS_MASK = 0xe0,
-   MESA_ARRAY_FORMAT_SWIZZLE_X_MASK = 0x00700,
-   MESA_ARRAY_FORMAT_SWIZZLE_Y_MASK = 0x03800,
-   MESA_ARRAY_FORMAT_SWIZZLE_Z_MASK = 0x1c000,
-   MESA_ARRAY_FORMAT_SWIZZLE_W_MASK = 0xe0000,
-   MESA_ARRAY_FORMAT_BIT = 0x80000000
 };
 
-#define MESA_ARRAY_FORMAT(SIZE, SIGNED, IS_FLOAT, NORM, NUM_CHANS, \
-      SWIZZLE_X, SWIZZLE_Y, SWIZZLE_Z, SWIZZLE_W) (                \
-   (((SIZE)           ) & MESA_ARRAY_FORMAT_TYPE_SIZE_MASK) |      \
+typedef union {
+   struct {
+      enum mesa_array_format_datatype type:4;
+      bool normalized:1;
+      unsigned num_channels:3;
+      unsigned swizzle_x:3;
+      unsigned swizzle_y:3;
+      unsigned swizzle_z:3;
+      unsigned swizzle_w:3;
+      unsigned pad:11;
+      unsigned array_format_bit:1; /* Must always be 1 */
+   };
+   uint32_t as_uint;
+} mesa_array_format;
+
+static const mesa_array_format _mesa_array_format_none = {{
+   MESA_ARRAY_FORMAT_TYPE_UBYTE,
+   0, 0, 0, 0, 0, 0, 0, 0
+}};
+
+static inline unsigned
+_mesa_ilog2(unsigned x)
+{
+   uint8_t i;
+   for (i = 1; i < 32; ++i)
+      if (x <= (1u << i))
+         return i;
+   return 32;
+}
+
+#define MESA_ARRAY_FORMAT_TYPE(SIZE, SIGNED, IS_FLOAT, NORM) (     \
+   ((_mesa_ilog2(SIZE)) & MESA_ARRAY_FORMAT_TYPE_SIZE_MASK) |      \
    (((SIGNED)    << 2 ) & MESA_ARRAY_FORMAT_TYPE_IS_SIGNED) |      \
-   (((IS_FLOAT)  << 3 ) & MESA_ARRAY_FORMAT_TYPE_IS_FLOAT) |       \
-   (((NORM)      << 4 ) & MESA_ARRAY_FORMAT_TYPE_NORMALIZED) |     \
-   (((NUM_CHANS) << 5 ) & MESA_ARRAY_FORMAT_NUM_CHANS_MASK) |      \
-   (((SWIZZLE_X) << 8 ) & MESA_ARRAY_FORMAT_SWIZZLE_X_MASK) |      \
-   (((SWIZZLE_Y) << 11) & MESA_ARRAY_FORMAT_SWIZZLE_Y_MASK) |      \
-   (((SWIZZLE_Z) << 14) & MESA_ARRAY_FORMAT_SWIZZLE_Z_MASK) |      \
-   (((SWIZZLE_Z) << 17) & MESA_ARRAY_FORMAT_SWIZZLE_W_MASK) |      \
-   MESA_ARRAY_FORMAT_BIT)
+   (((IS_FLOAT)  << 3 ) & MESA_ARRAY_FORMAT_TYPE_IS_FLOAT)
 
 /**
  * Mesa texture/renderbuffer image formats.
