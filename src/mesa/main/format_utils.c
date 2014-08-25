@@ -25,6 +25,54 @@
 #include "format_utils.h"
 #include "glformats.h"
 
+mesa_array_format RGBA8888_FLOAT_ARRAY_FORMAT = {{
+   MESA_ARRAY_FORMAT_TYPE_FLOAT,
+   0,
+   4,
+   0, 1, 2, 3,
+   0, 1
+}};
+
+mesa_array_format RGBA8888_UBYTE_ARRAY_FORMAT = {{
+   MESA_ARRAY_FORMAT_TYPE_UBYTE,
+   1,
+   4,
+   0, 1, 2, 3,
+   0, 1
+}};
+
+mesa_array_format RGBA8888_UINT_ARRAY_FORMAT = {{
+   MESA_ARRAY_FORMAT_TYPE_UBYTE,
+   1,
+   4,
+   0, 1, 2, 3,
+   0, 1
+}};
+
+_mesa_format_convert(void *dst, uint32_t dst_format, size_t dst_stride,
+                     void *src, uint32_t src_format, size_t src_stride,
+                     size_t width, size_t height)
+{
+   mesa_array_format src_array_format, dst_array_format;
+
+   if (!(src_format & MESA_ARRAY_FORMAT_BIT)) {
+      src_array_format.as_uint = _mesa_format_to_array_format(src_format);
+   } else {
+      src_array_format.as_uint = 0;
+   }
+
+   if (!(dst_format & MESA_ARRAY_FORMAT_BIT)) {
+      dst_array_format.as_uint = _mesa_format_to_array_format(dst_format);
+   } else {
+      dst_array_format.as_uint = 0;
+   }
+
+   if (!(src_format & MESA_ARRAY_FORMAT_BIT)) {
+      if (dst_array_format == RGBA8888_FLOAT_ARRAY_FORMAT) {
+      }
+   }
+}
+
 static const uint8_t map_identity[7] = { 0, 1, 2, 3, 4, 5, 6 };
 static const uint8_t map_3210[7] = { 3, 2, 1, 0, 4, 5, 6 };
 static const uint8_t map_1032[7] = { 1, 0, 3, 2, 4, 5, 6 };

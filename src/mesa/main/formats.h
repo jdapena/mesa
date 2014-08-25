@@ -95,6 +95,8 @@ enum  mesa_array_format_datatype {
    MESA_ARRAY_FORMAT_TYPE_IS_FLOAT = 0x8,
 };
 
+#define MESA_ARRAY_FORMAT_BIT = 0x80000000
+
 typedef union {
    struct {
       enum mesa_array_format_datatype type:4;
