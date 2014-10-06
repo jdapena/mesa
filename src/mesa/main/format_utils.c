@@ -44,7 +44,7 @@ mesa_array_format RGBA8888_UBYTE = {{
 }};
 
 mesa_array_format RGBA8888_UINT = {{
-   MESA_ARRAY_FORMAT_TYPE_UBYTE,
+   MESA_ARRAY_FORMAT_TYPE_UINT,
    1,
    4,
    0, 1, 2, 3,
