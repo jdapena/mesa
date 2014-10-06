@@ -146,8 +146,9 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
       } else if (dst_array_format.as_uint == RGBA8888_UINT.as_uint) {
          assert(_mesa_is_format_integer_color(src_format));
          for (row = 0; row < height; ++row) {
-            _mesa_unpack_uint_rgba_row(src_format, width,
-                                       src, (uint32_t (*)[4])dst);
+            assert(!"_mesa_unpack_uint_rgba_row not implemented");
+//            _mesa_unpack_uint_rgba_row(src_format, width,
+//                                       src, (uint32_t (*)[4])dst);
             src += src_stride;
             dst += dst_stride;
          }
@@ -177,8 +178,9 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
       } else if (src_array_format.as_uint == RGBA8888_UINT.as_uint) {
          assert(_mesa_is_format_integer_color(dst_format));
          for (row = 0; row < height; ++row) {
-            _mesa_pack_uint_rgba_row(dst_format, width,
-                                     (const uint32_t (*)[4])src, dst);
+            assert(!"_mesa_unpack_uint_rgba_row not implemented");
+//            _mesa_pack_uint_rgba_row(dst_format, width,
+//                                     (const uint32_t (*)[4])src, dst);
             src += src_stride;
             dst += dst_stride;
          }
@@ -322,8 +324,11 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
          }
       } else {
          for (row = 0; row < height; ++row) {
-            _mesa_pack_uint_rgba_row(dst_format, width,
-                                     (const uint32_t (*)[4])tmp_uint + row * width, dst);
+            assert(!"_mesa_pack_uint_rgba_row not implemented");
+            _mesa_unpack_uint_rgba_row(src_format, width,
+                                       src, (uint32_t (*)[4])dst);
+//            _mesa_pack_uint_rgba_row(dst_format, width,
+//                                     (const uint32_t (*)[4])tmp_uint + row * width, dst);
             dst += dst_stride;
          }
       }
@@ -343,8 +348,8 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
             }
          } else {
             for (row = 0; row < height; ++row) {
-               _mesa_unpack_float_rgba_row(src_format, width,
-                                          src, tmp_float + row * width);
+               _mesa_unpack_rgba_row(src_format, width,
+                                     src, tmp_float + row * width);
                src += src_stride;
             }
          }
