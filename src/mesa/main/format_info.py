@@ -228,6 +228,8 @@ for fmat in formats:
          str(fmat.swizzle[1]),
          str(fmat.swizzle[2]),
          str(fmat.swizzle[3]),
+         str(int(0)),
+         str(int(1))
       ]))
    else:
       print '      {{ MESA_ARRAY_FORMAT_TYPE_UBYTE, 0, 0, 0, 0, 0, 0, 0, 0 }},'
