@@ -723,9 +723,27 @@ memcpy_texture(struct gl_context *ctx,
 static GLboolean
 store_ubyte_texture(TEXSTORE_PARAMS)
 {
-   const GLint srcRowStride = srcWidth * 4 * sizeof(GLubyte);
+   GLint srcRowStride = srcWidth * 4 * sizeof(GLubyte);
    GLubyte *tempImage, *src;
    GLint img;
+
+/* --- */
+if (true) {
+   src = srcAddr;
+   srcRowStride =
+      _mesa_image_row_stride(srcPacking, srcWidth, srcFormat, srcType);
+   mesa_format srcMesaFormat = MESA_FORMAT_R5G6B5_UNORM;
+   dstFormat = _mesa_get_srgb_format_linear(dstFormat);
+   for (img = 0; img < srcDepth; img++) {
+      _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
+                           src, srcMesaFormat, srcRowStride,
+                           srcWidth, srcHeight);
+      src += srcHeight * srcRowStride;
+   }
+
+   return GL_TRUE;
+}
+/* --- */
 
    tempImage = _mesa_make_temp_ubyte_image(ctx, dims,
                                            baseInternalFormat,
@@ -1532,6 +1550,20 @@ texstore_swizzle(TEXSTORE_PARAMS)
    }
    swap = need_swap ? map_3210 : map_identity;
 
+/* --- */
+if (true) {
+   GLubyte *src = (GLubyte *) srcAddr;
+   mesa_format srcMesaFormat = MESA_FORMAT_A8B8G8R8_UNORM;
+   for (img = 0; img < srcDepth; img++) {
+      _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
+                           src, srcMesaFormat, srcRowStride,
+                           srcWidth, srcHeight);
+      src += srcHeight * srcRowStride;
+   }
+   return GL_TRUE;
+}
+/* --- */
+
    compute_component_mapping(srcFormat, baseInternalFormat, base2src);
    compute_component_mapping(baseInternalFormat, GL_RGBA, rgba2base);
    invert_swizzle(dst2rgba, rgba2dst);
@@ -1587,6 +1619,21 @@ texstore_via_float(TEXSTORE_PARAMS)
    bool need_convert;
    uint8_t *src_row, *dst_row, map[4], rgba2base[6], base2rgba[6];
 
+/* --- */
+if (false) {
+   GLubyte *src = (GLubyte *) srcAddr;
+   mesa_format srcMesaFormat = MESA_FORMAT_R5G6B5_UNORM;
+   dstFormat = _mesa_get_srgb_format_linear(dstFormat);
+   for (img = 0; img < srcDepth; img++) {
+      _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
+                           src, srcMesaFormat, src_stride,
+                           srcWidth, srcHeight);
+      src += srcHeight * src_stride;
+   }
+
+   return GL_TRUE;
+}
+/* --- */
    tmp_row = malloc(srcWidth * 4 * sizeof(*tmp_row));
    if (!tmp_row)
       return GL_FALSE;
@@ -1670,6 +1717,18 @@ texstore_rgba_integer(TEXSTORE_PARAMS)
    if (!is_array)
       return GL_FALSE;
 
+/*   
+   uint8_t *src = (uint8_t *) srcAddr;
+   mesa_format srcMesaFormat = MESA_FORMAT_R8G8B8A8_UNORM;
+   dstFormat = _mesa_get_srgb_format_linear(dstFormat);
+   for (img = 0; img < srcDepth; img++) {
+      _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
+                           src, srcMesaFormat, src_stride,
+                           srcWidth, srcHeight);
+      src += srcHeight * src_stride;
+   }
+   return GL_TRUE;
+*/ 
    invert_swizzle(dst2rgba, rgba2dst);
    compute_component_mapping(GL_RGBA, baseInternalFormat, base2rgba);
    compute_component_mapping(baseInternalFormat, GL_RGBA, rgba2base);
