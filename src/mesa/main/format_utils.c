@@ -157,7 +157,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
    }
 
    /* Handle the cases where we can directly pack */
-   if (!(dst_format & MESA_ARRAY_FORMAT_BIT)) {
+   if (!(src_format & MESA_ARRAY_FORMAT_BIT)) {
       if (src_array_format.as_uint == RGBA8888_FLOAT.as_uint) {
          for (row = 0; row < height; ++row) {
             _mesa_pack_float_rgba_row(src_format, width,
@@ -179,7 +179,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
          assert(_mesa_is_format_integer_color(dst_format));
          for (row = 0; row < height; ++row) {
             assert(!"_mesa_unpack_uint_rgba_row not implemented");
-//            _mesa_pack_uint_rgba_row(dst_format, width,
+//            _mesa_pack_uint_rgba_row(src_format, width,
 //                                     (const uint32_t (*)[4])src, dst);
             src += src_stride;
             dst += dst_stride;
@@ -188,6 +188,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
       }
    }
 
+   normalized = false;
    if (src_array_format.as_uint) {
       src_gl_type = gl_type_for_array_format_datatype(src_array_format.type);
 
@@ -196,7 +197,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
       src2rgba[2] = src_array_format.swizzle_z;
       src2rgba[3] = src_array_format.swizzle_w;
 
-      normalized = src_array_format.normalized;
+      normalized |= src_array_format.normalized;
    }
 
    if (dst_array_format.as_uint) {
@@ -209,11 +210,11 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
 
       invert_swizzle(rgba2dst, dst2rgba);
 
-      normalized = dst_array_format.normalized;
+      normalized |= dst_array_format.normalized;
    }
 
    if (src_array_format.as_uint && dst_array_format.as_uint) {
-      assert(src_array_format.normalized == dst_array_format.normalized);
+//      assert(src_array_format.normalized == dst_array_format.normalized);
 
       for (i = 0; i < 4; i++) {
          if (dst2rgba[i] > MESA_FORMAT_SWIZZLE_W) {
