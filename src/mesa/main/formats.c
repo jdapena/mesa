@@ -314,6 +314,132 @@ _mesa_format_from_array_format(uint32_t array_format)
    return MESA_FORMAT_NONE;
 }
 
+static void
+_mesa_array_format_set_swizzle(mesa_array_format *array_format,
+                               int x, int y, int z, int w)
+{
+   array_format->swizzle_x = x;
+   array_format->swizzle_y = y;
+   array_format->swizzle_z = z;
+   array_format->swizzle_w = w;
+}
+
+static bool
+_mesa_array_format_set_swizzle_from_format(mesa_array_format *array_format,
+                                           GLenum format)
+{
+   switch (format) {
+   case GL_RGBA:
+   case GL_RGBA_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 0, 1, 2, 3);
+      return true;
+   case GL_BGRA:
+   case GL_BGRA_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 2, 1, 0, 3);
+      return true;
+   case GL_ABGR_EXT:
+      _mesa_array_format_set_swizzle(array_format, 3, 2, 1, 0);
+      return true;
+   case GL_RGB:
+   case GL_RGB_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 0, 1, 2, 5);
+      return true;
+   case GL_BGR:
+   case GL_BGR_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 2, 1, 0, 5);
+      return true;
+   case GL_LUMINANCE_ALPHA:
+   case GL_LUMINANCE_ALPHA_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 0, 0, 0, 1);
+      return true;
+   case GL_RG:
+   case GL_RG_INTEGER:
+      _mesa_array_format_set_swizzle(array_format, 0, 1, 4, 5);
+      return true;
+   case GL_COLOR_INDEX:
+   case GL_STENCIL_INDEX:
+   case GL_DEPTH_COMPONENT:
+      return false;
+   case GL_RED:
+   case GL_RED_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 0, 4, 4, 5);
+      return true;
+   case GL_GREEN:
+   case GL_GREEN_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 4, 0, 4, 5);
+      return true;
+   case GL_BLUE:
+   case GL_BLUE_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 4, 4, 0, 5);
+      return true;
+   case GL_ALPHA:
+   case GL_ALPHA_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 4, 4, 4, 0);
+      return true;
+   case GL_LUMINANCE:
+   case GL_LUMINANCE_INTEGER_EXT:
+      _mesa_array_format_set_swizzle(array_format, 0, 0, 0, 5);
+      return true;
+   case GL_INTENSITY:
+      _mesa_array_format_set_swizzle(array_format, 0, 0, 0, 0);
+      return true;
+   default:
+      return false;
+   }
+}
+
+uint32_t
+_mesa_format_from_format_and_type(GLenum format, GLenum type)
+{
+   mesa_array_format array_format;
+
+   bool is_array_format = true;
+   switch (type) {
+   case GL_UNSIGNED_BYTE:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_UBYTE;
+      break;
+   case GL_BYTE:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_BYTE;
+      break;
+   case GL_UNSIGNED_SHORT:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_USHORT;
+      break;
+   case GL_SHORT:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_SHORT;
+      break;
+   case GL_UNSIGNED_INT:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_UINT;
+      break;
+   case GL_INT:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_INT;
+      break;
+   case GL_HALF_FLOAT:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_HALF;
+      break;
+   case GL_FLOAT:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_FLOAT;
+      break;
+   default:
+      is_array_format = false;
+      break;
+   }
+
+   if (is_array_format) {
+      is_array_format =
+         _mesa_array_format_set_swizzle_from_format(&array_format, format);
+   }
+
+   if (is_array_format) {
+      array_format.normalized = !_mesa_is_enum_format_integer(format);
+      array_format.num_channels = _mesa_components_in_format(format);
+      array_format.pad = 0;
+      array_format.array_format_bit = 1;
+      return array_format.as_uint;
+   }
+
+   return 0;
+}
+
 /** Is the given format a compressed format? */
 GLboolean
 _mesa_is_format_compressed(mesa_format format)
