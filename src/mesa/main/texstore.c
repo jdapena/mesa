@@ -728,8 +728,8 @@ store_ubyte_texture(TEXSTORE_PARAMS)
    GLint img;
 
 /* --- */
-if (true) {
-   src = srcAddr;
+if (false) {
+   src = (GLubyte *) srcAddr;
    srcRowStride =
       _mesa_image_row_stride(srcPacking, srcWidth, srcFormat, srcType);
    mesa_format srcMesaFormat = MESA_FORMAT_R5G6B5_UNORM;
@@ -1553,7 +1553,8 @@ texstore_swizzle(TEXSTORE_PARAMS)
 /* --- */
 if (true) {
    GLubyte *src = (GLubyte *) srcAddr;
-   mesa_format srcMesaFormat = MESA_FORMAT_A8B8G8R8_UNORM;
+   uint32_t srcMesaFormat =
+      _mesa_format_from_format_and_type(srcFormat, srcType);
    for (img = 0; img < srcDepth; img++) {
       _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
                            src, srcMesaFormat, srcRowStride,
