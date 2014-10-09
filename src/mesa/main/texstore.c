@@ -1519,6 +1519,22 @@ texstore_swizzle(TEXSTORE_PARAMS)
    if (_mesa_texstore_needs_transfer_ops(ctx, baseInternalFormat, dstFormat))
       return GL_FALSE;
 
+/* --- */
+if (true) {
+   GLubyte *src = (GLubyte *) srcAddr;
+   uint32_t srcMesaFormat =
+      _mesa_format_from_format_and_type(srcFormat, srcType,
+                                        srcPacking->SwapBytes);
+   for (img = 0; img < srcDepth; img++) {
+      _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
+                           src, srcMesaFormat, srcRowStride,
+                           srcWidth, srcHeight);
+      src += srcHeight * srcRowStride;
+   }
+   return GL_TRUE;
+}
+/* --- */
+
    switch (srcType) {
    case GL_FLOAT:
    case GL_UNSIGNED_BYTE:
@@ -1549,22 +1565,6 @@ texstore_swizzle(TEXSTORE_PARAMS)
       return GL_FALSE;
    }
    swap = need_swap ? map_3210 : map_identity;
-
-/* --- */
-if (true) {
-   GLubyte *src = (GLubyte *) srcAddr;
-   uint32_t srcMesaFormat =
-      _mesa_format_from_format_and_type(srcFormat, srcType,
-                                        srcPacking->SwapBytes);
-   for (img = 0; img < srcDepth; img++) {
-      _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
-                           src, srcMesaFormat, srcRowStride,
-                           srcWidth, srcHeight);
-      src += srcHeight * srcRowStride;
-   }
-   return GL_TRUE;
-}
-/* --- */
 
    compute_component_mapping(srcFormat, baseInternalFormat, base2src);
    compute_component_mapping(baseInternalFormat, GL_RGBA, rgba2base);
