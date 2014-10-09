@@ -82,7 +82,7 @@ gl_type_for_array_format_datatype(enum mesa_array_format_datatype type)
    case MESA_ARRAY_FORMAT_TYPE_SHORT:
       return GL_SHORT;
    case MESA_ARRAY_FORMAT_TYPE_INT:
-      return GL_SHORT;
+      return GL_INT;
    case MESA_ARRAY_FORMAT_TYPE_HALF:
       return GL_HALF_FLOAT;
    case MESA_ARRAY_FORMAT_TYPE_FLOAT:
