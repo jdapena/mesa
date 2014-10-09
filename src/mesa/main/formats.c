@@ -273,16 +273,24 @@ _mesa_get_format_swizzle(mesa_format format, uint8_t swizzle_out[4])
 static mesa_array_format
 array_format_flip_channels(mesa_array_format format)
 {
-   if (format.swizzle_x <= MESA_FORMAT_SWIZZLE_W)
-      format.swizzle_x = format.num_channels = format.swizzle_x;
-   if (format.swizzle_y <= MESA_FORMAT_SWIZZLE_W)
-      format.swizzle_y = format.num_channels = format.swizzle_y;
-   if (format.swizzle_z <= MESA_FORMAT_SWIZZLE_W)
-      format.swizzle_z = format.num_channels = format.swizzle_z;
-   if (format.swizzle_w <= MESA_FORMAT_SWIZZLE_W)
-      format.swizzle_w = format.num_channels = format.swizzle_w;
+   if (format.num_channels == 1)
+      return format;
+      
+   if (format.num_channels == 2) {
+      format.swizzle_x = format.swizzle_y;
+      format.swizzle_y = format.swizzle_x;
+      return format;
+   }
 
-   return format;
+   if (format.num_channels == 4) {
+      format.swizzle_x = format.swizzle_w;
+      format.swizzle_y = format.swizzle_z;
+      format.swizzle_z = format.swizzle_y;
+      format.swizzle_w = format.swizzle_x;
+      return format;
+   }
+
+   assert(!"Invalid array format");
 }
 
 uint32_t
@@ -388,11 +396,29 @@ _mesa_array_format_set_swizzle_from_format(mesa_array_format *array_format,
    }
 }
 
+/**
+ * Take an OpenGL format (GL_RGB, GL_RGBA, etc), OpenGL data type (GL_INT,
+ * GL_FOAT, etc) and a flag indicating if data channels are swapped and return
+ * a matchingmesa_array_format or a mesa_format otherwise (for non-array
+ * formats).
+ *
+ * This function returns an uint32_t. Clients must check MESA_ARRAY_FORMAT_BIT
+ * on the return result to know if the returned format is a mesa_array_format
+ * or a mesa_format.
+ */
 uint32_t
-_mesa_format_from_format_and_type(GLenum format, GLenum type)
+_mesa_format_from_format_and_type(GLenum format, GLenum type, bool swap_bytes)
 {
    mesa_array_format array_format;
 
+   /* FIXME: texstore_swizzle says that swap_bytes=TRUE with any of GL_FLOAT,
+    * GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, GL_SHORT, GL_UNSIGNED_INT,
+    * GL_INT is not an array format. However, it does consider swapbytes whith
+    * things like GL_UNSIGNED_INT_8_8_8_8 to be array formats... Check if this
+    * is true.
+    */
+
+   /* First we map the OpenGL data type to an array format data type */
    bool is_array_format = true;
    switch (type) {
    case GL_UNSIGNED_BYTE:
@@ -419,25 +445,41 @@ _mesa_format_from_format_and_type(GLenum format, GLenum type)
    case GL_FLOAT:
       array_format.type = MESA_ARRAY_FORMAT_TYPE_FLOAT;
       break;
+   case GL_UNSIGNED_INT_8_8_8_8:
+      array_format.type = MESA_ARRAY_FORMAT_TYPE_UBYTE;
+      break;      
    default:
       is_array_format = false;
       break;
    }
 
+   /* Next we extract array swizzle information from the OpenGL format */
    if (is_array_format) {
       is_array_format =
          _mesa_array_format_set_swizzle_from_format(&array_format, format);
    }
 
+   /* If this is an array format type after checking data type and format,
+    * fill in the remaining data
+    */
    if (is_array_format) {
       array_format.normalized = !_mesa_is_enum_format_integer(format);
       array_format.num_channels = _mesa_components_in_format(format);
       array_format.pad = 0;
       array_format.array_format_bit = 1;
+      if (!_mesa_little_endian())
+         array_format = array_format_flip_channels(array_format);
       return array_format.as_uint;
    }
 
-   return 0;
+   /* Otherwise this is not an array format, so return the mesa_format
+    * matching the OpenGL format and data type
+    */
+   for (int f = 1; f < MESA_FORMAT_COUNT; f++)
+      if (_mesa_format_matches_format_and_type(f, format, type, swap_bytes))
+         return f;
+
+   assert(!"Unsupported format");
 }
 
 /** Is the given format a compressed format? */

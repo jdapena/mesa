@@ -1554,7 +1554,8 @@ texstore_swizzle(TEXSTORE_PARAMS)
 if (true) {
    GLubyte *src = (GLubyte *) srcAddr;
    uint32_t srcMesaFormat =
-      _mesa_format_from_format_and_type(srcFormat, srcType);
+      _mesa_format_from_format_and_type(srcFormat, srcType,
+                                        srcPacking->SwapBytes);
    for (img = 0; img < srcDepth; img++) {
       _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
                            src, srcMesaFormat, srcRowStride,
