@@ -411,46 +411,70 @@ _mesa_format_from_format_and_type(GLenum format, GLenum type, bool swap_bytes)
 {
    mesa_array_format array_format;
 
-   /* FIXME: texstore_swizzle says that swap_bytes=TRUE with any of GL_FLOAT,
-    * GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, GL_SHORT, GL_UNSIGNED_INT,
-    * GL_INT is not an array format. However, it does consider swapbytes whith
-    * things like GL_UNSIGNED_INT_8_8_8_8 to be array formats... Check if this
-    * is true.
-    */
+   bool is_array_format;
+   bool do_swap_bytes = false;
 
-   /* First we map the OpenGL data type to an array format data type */
-   bool is_array_format = true;
+   /* If swap_bytes is true this may or may not be an array format. Also,
+    * GL_UNSIGNED_INT_8_8_8_8* types may need specific handling.
+    *
+    * This logic was extracted from texstore_swizzle, which converts between
+    * array formats.
+    */
    switch (type) {
-   case GL_UNSIGNED_BYTE:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_UBYTE;
-      break;
-   case GL_BYTE:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_BYTE;
-      break;
-   case GL_UNSIGNED_SHORT:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_USHORT;
-      break;
-   case GL_SHORT:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_SHORT;
-      break;
-   case GL_UNSIGNED_INT:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_UINT;
-      break;
-   case GL_INT:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_INT;
-      break;
-   case GL_HALF_FLOAT:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_HALF;
-      break;
    case GL_FLOAT:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_FLOAT;
+   case GL_UNSIGNED_BYTE:
+   case GL_BYTE:
+   case GL_UNSIGNED_SHORT:
+   case GL_SHORT:
+   case GL_UNSIGNED_INT:
+   case GL_INT:
+      is_array_format = !swap_bytes;
       break;
    case GL_UNSIGNED_INT_8_8_8_8:
-      array_format.type = MESA_ARRAY_FORMAT_TYPE_UBYTE;
-      break;      
+      do_swap_bytes = _mesa_little_endian() ? !swap_bytes : swap_bytes;
+      break;
+   case GL_UNSIGNED_INT_8_8_8_8_REV:
+      do_swap_bytes = _mesa_little_endian() ? swap_bytes : !swap_bytes;
+      break;
    default:
       is_array_format = false;
-      break;
+   }
+
+   /* Map the OpenGL data type to an array format data type */
+   if (is_array_format) {
+      switch (type) {
+      case GL_UNSIGNED_BYTE:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_UBYTE;
+         break;
+      case GL_BYTE:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_BYTE;
+         break;
+      case GL_UNSIGNED_SHORT:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_USHORT;
+         break;
+      case GL_SHORT:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_SHORT;
+         break;
+      case GL_UNSIGNED_INT:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_UINT;
+         break;
+      case GL_INT:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_INT;
+         break;
+      case GL_HALF_FLOAT:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_HALF;
+         break;
+      case GL_FLOAT:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_FLOAT;
+         break;
+      case GL_UNSIGNED_INT_8_8_8_8:
+      case GL_UNSIGNED_INT_8_8_8_8_REV:
+         array_format.type = MESA_ARRAY_FORMAT_TYPE_UBYTE;
+         break;
+      default:
+         is_array_format = false;
+         break;
+      }
    }
 
    /* Next we extract array swizzle information from the OpenGL format */
@@ -467,7 +491,7 @@ _mesa_format_from_format_and_type(GLenum format, GLenum type, bool swap_bytes)
       array_format.num_channels = _mesa_components_in_format(format);
       array_format.pad = 0;
       array_format.array_format_bit = 1;
-      if (!_mesa_little_endian())
+      if (!_mesa_little_endian() || do_swap_bytes)
          array_format = array_format_flip_channels(array_format);
       return array_format.as_uint;
    }
@@ -479,6 +503,10 @@ _mesa_format_from_format_and_type(GLenum format, GLenum type, bool swap_bytes)
       if (_mesa_format_matches_format_and_type(f, format, type, swap_bytes))
          return f;
 
+   /* FIXME: If we got here it means that the GL type is not a mesa_format so
+    * we won't be able to convert it via de master function. We will need to
+    * add a new mesa_format for it as well as pack and unpack functions.
+    */
    assert(!"Unsupported format");
 }
 
