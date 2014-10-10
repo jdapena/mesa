@@ -893,7 +893,7 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
          _mesa_pack_int_rgba_row(MESA_FORMAT_R10G10B10A2_UNORM, n, (void *)rgba[0], (void *)dstAddr);
       }
       else if ((dstFormat == GL_BGRA) || (dstFormat == GL_BGRA_INTEGER)) {
-         _mesa_pack_uint_rgba_row(MESA_FORMAT_B10G10R10A2_UNORM, n, (void *)rgba[0], (void *)dstAddr);
+         _mesa_pack_int_rgba_row(MESA_FORMAT_B10G10R10A2_UNORM, n, (void *)rgba[0], (void *)dstAddr);
       }
       else if (dstFormat == GL_ABGR_EXT) {
          _mesa_pack_int_rgba_row(MESA_FORMAT_A10B10G10R2_UNORM, n, (void *)rgba[0], (void *)dstAddr);
