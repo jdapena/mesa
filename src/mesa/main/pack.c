@@ -1347,18 +1347,12 @@ _mesa_pack_rgba_span_float(struct gl_context *ctx, GLuint n, GLfloat rgba[][4],
          break;
       case GL_UNSIGNED_INT_5_9_9_9_REV:
          {
-            GLuint *dst = (GLuint *) dstAddr;
-            for (i = 0; i < n; i++) {
-               dst[i] = float3_to_rgb9e5(rgba[i]);
-            }
+            _mesa_pack_float_rgba_row(MESA_FORMAT_R9G9B9E5_FLOAT, n, (void *)rgba[0], (void *)dstAddr);
          }
          break;
       case GL_UNSIGNED_INT_10F_11F_11F_REV:
          {
-            GLuint *dst = (GLuint *) dstAddr;
-            for (i = 0; i < n; i++) {
-               dst[i] = float3_to_r11g11b10f(rgba[i]);
-            }
+            _mesa_pack_float_rgba_row(MESA_FORMAT_R11G11B10_FLOAT, n, (void *)rgba[0], (void *)dstAddr);
          }
          break;
       default:
