@@ -921,7 +921,7 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
 #undef FLOAT_SRC_CONVERT
 #undef FN_NAME
 
-#define DST_TYPE GLuint
+#define DST_TYPE GLint
 #define FLOAT_SRC_CONVERT(x) FLOAT_TO_INT(x)
 #define SRC_CONVERT(x) (GLint) x
 #define FN_NAME pack_int_from_float_rgba
