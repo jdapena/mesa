@@ -291,8 +291,6 @@ unpack_ubyte_a2r10g10b10_unorm(const void *void_src, GLubyte dst[4])
 %for f in rgb_formats:
    %if not f.is_int():
       <% continue %>
-   %elif f.is_normalized():
-      <% continue %>
    %endif
 
 static inline void
@@ -318,7 +316,29 @@ unpack_int_${f.short_name()}(const void *void_src, GLuint dst[4])
    %for i in range(4):
       <% s = f.swizzle[i] %>
       %if 0 <= s and s <= parser.Swizzle.SWIZZLE_W:
-         dst[${i}] = ${f.channels[s].name};
+         <% c = f.channels[s] %>
+         %if not f.is_normalized():
+            dst[${i}] = ${c.name};
+         %elif c.type == parser.UNSIGNED:
+            %if f.colorspace == 'srgb' and c.name in 'rgb':
+               <% assert c.size == 8 %>
+               dst[${i}] = util_format_srgb_to_linear_8unorm(${c.name});
+            %else:
+               dst[${i}] = _mesa_unorm_to_unorm(${c.name}, ${c.size}, 32);
+            %endif
+         %elif c.type == parser.SIGNED:
+            dst[${i}] = _mesa_snorm_to_unorm(${c.name}, ${c.size}, 32);
+         %elif c.type == parser.FLOAT:
+            %if c.size == 32:
+               dst[${i}] = _mesa_float_to_unorm(${c.name}, 32);
+            %elif c.size == 16:
+               dst[${i}] = _mesa_half_to_unorm(${c.name}, 32);
+            %else:
+               <% assert False %>
+            %endif
+         %else:
+            <% assert False %>
+         %endif
       %elif s == parser.Swizzle.SWIZZLE_ZERO:
          dst[${i}] = 0;
       %elif s == parser.Swizzle.SWIZZLE_ONE:
