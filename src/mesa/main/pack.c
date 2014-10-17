@@ -3722,13 +3722,9 @@ _mesa_pack_depth_span( struct gl_context *ctx, GLuint n, GLvoid *dest,
       break;
    case GL_UNSIGNED_SHORT:
       {
-         GLushort *dst = (GLushort *) dest;
-         GLuint i;
-         for (i = 0; i < n; i++) {
-            CLAMPED_FLOAT_TO_USHORT(dst[i], depthSpan[i]);
-         }
+         _mesa_pack_float_z_row(MESA_FORMAT_Z_UNORM16, n, depthSpan, dest);
          if (dstPacking->SwapBytes) {
-            _mesa_swap2( (GLushort *) dst, n );
+            _mesa_swap2( (GLushort *) dest, n );
          }
       }
       break;
@@ -3746,13 +3742,9 @@ _mesa_pack_depth_span( struct gl_context *ctx, GLuint n, GLvoid *dest,
       break;
    case GL_UNSIGNED_INT:
       {
-         GLuint *dst = (GLuint *) dest;
-         GLuint i;
-         for (i = 0; i < n; i++) {
-            dst[i] = FLOAT_TO_UINT( depthSpan[i] );
-         }
+         _mesa_pack_float_z_row(MESA_FORMAT_Z_UNORM32, n, depthSpan, dest);
          if (dstPacking->SwapBytes) {
-            _mesa_swap4( (GLuint *) dst, n );
+            _mesa_swap4( (GLuint *) dest, n );
          }
       }
       break;
