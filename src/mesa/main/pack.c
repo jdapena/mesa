@@ -572,52 +572,6 @@ _mesa_pack_rgba_span_from_uints(struct gl_context *ctx, GLuint n, GLuint rgba[][
    }
 }
 
-/* Customization of signed integer packing.
- */
-#define SRC_TYPE GLint
-
-#define DST_TYPE GLuint
-#define SRC_CONVERT(x) MAX2(x, 0)
-#define FN_NAME pack_uint_from_int_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLushort
-#define SRC_CONVERT(x) MAX2(x, 0)
-#define FN_NAME pack_ushort_from_int_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLshort
-#define SRC_CONVERT(x) CLAMP(x, -0x8000, 0x7fff)
-#define FN_NAME pack_short_from_int_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLubyte
-#define SRC_CONVERT(x) MAX2(x, 0)
-#define FN_NAME pack_ubyte_from_int_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLbyte
-#define SRC_CONVERT(x) CLAMP(x, -0x80, 0x7f)
-#define FN_NAME pack_byte_from_int_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#undef SRC_TYPE
-
 static void
 _pack_rgba_span_from_ints_problem(struct gl_context *ctx,
                                    GLenum dstFormat, GLenum dstType)
@@ -638,23 +592,31 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
 
    switch(dstType) {
    case GL_UNSIGNED_INT:
-      pack_uint_from_int_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_INT:
-      /* No conversion necessary. */
-      pack_uint_from_uint_rgba(ctx, dstAddr, dstFormat, (GLuint (*)[4]) rgba, NULL, n);
-      break;
    case GL_UNSIGNED_SHORT:
-      pack_ushort_from_int_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_SHORT:
-      pack_short_from_int_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_UNSIGNED_BYTE:
-      pack_ubyte_from_int_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_BYTE:
-      pack_byte_from_int_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
+   {
+      uint8_t swizzle[4];
+      mesa_array_format dstMesaArrayFormat;
+
+      dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType, false);
+      if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
+         assert(_mesa_is_format_color_format(dstMesaFormat));
+         dstMesaArrayFormat.as_uint = _mesa_format_to_array_format(dstMesaFormat);
+      } else {
+         dstMesaArrayFormat.as_uint = dstMesaFormat;
+      }
+      swizzle[0] = dstMesaArrayFormat.swizzle_x;
+      swizzle[1] = dstMesaArrayFormat.swizzle_y;
+      swizzle[2] = dstMesaArrayFormat.swizzle_z;
+      swizzle[3] = dstMesaArrayFormat.swizzle_w;
+
+      _mesa_swizzle_and_convert(dstAddr, dstType, dstMesaArrayFormat.num_channels,
+                                (void *)rgba[0], GL_INT, 4,
+                                swizzle, dstMesaArrayFormat.normalized, n);
+   }
       break;
    case GL_UNSIGNED_BYTE_3_3_2:
    case GL_UNSIGNED_BYTE_2_3_3_REV:
