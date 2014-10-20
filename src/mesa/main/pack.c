@@ -597,6 +597,18 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
    case GL_SHORT:
    case GL_UNSIGNED_BYTE:
    case GL_BYTE:
+   case GL_UNSIGNED_BYTE_3_3_2:
+   case GL_UNSIGNED_BYTE_2_3_3_REV:
+   case GL_UNSIGNED_SHORT_5_6_5:
+   case GL_UNSIGNED_SHORT_5_6_5_REV:
+   case GL_UNSIGNED_SHORT_4_4_4_4:
+   case GL_UNSIGNED_SHORT_4_4_4_4_REV:
+   case GL_UNSIGNED_SHORT_5_5_5_1:
+   case GL_UNSIGNED_SHORT_1_5_5_5_REV:
+   case GL_UNSIGNED_INT_8_8_8_8:
+   case GL_UNSIGNED_INT_8_8_8_8_REV:
+   case GL_UNSIGNED_INT_10_10_10_2:
+   case GL_UNSIGNED_INT_2_10_10_10_REV:
    {
       mesa_array_format srcMesaArrayFormat, dstMesaArrayFormat;
       uint32_t srcMesaFormat, dstSize;
@@ -624,21 +636,6 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
          (void *)rgba, srcMesaArrayFormat.as_uint, 4*4,
          n, 1, _mesa_get_format_base_format(dstFormat), true);
    }
-      break;
-   case GL_UNSIGNED_BYTE_3_3_2:
-   case GL_UNSIGNED_BYTE_2_3_3_REV:
-   case GL_UNSIGNED_SHORT_5_6_5:
-   case GL_UNSIGNED_SHORT_5_6_5_REV:
-   case GL_UNSIGNED_SHORT_4_4_4_4:
-   case GL_UNSIGNED_SHORT_4_4_4_4_REV:
-   case GL_UNSIGNED_SHORT_5_5_5_1:
-   case GL_UNSIGNED_SHORT_1_5_5_5_REV:
-   case GL_UNSIGNED_INT_8_8_8_8:
-   case GL_UNSIGNED_INT_8_8_8_8_REV:
-   case GL_UNSIGNED_INT_10_10_10_2:
-   case GL_UNSIGNED_INT_2_10_10_10_REV:
-      dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType, false);
-      _mesa_pack_int_rgba_row(dstMesaFormat, n, (void *)rgba[0], (void *)dstAddr);
       break;
    default:
       _pack_rgba_span_from_ints_problem(ctx, dstFormat, dstType);
