@@ -27,6 +27,7 @@
 #include "format_pack.h"
 #include "format_unpack.h"
 #include "enums.h"
+#include "macros.h"
 
 mesa_array_format RGBA8888_FLOAT = {{
    MESA_ARRAY_FORMAT_TYPE_FLOAT,
@@ -1211,7 +1212,7 @@ convert_byte(void *void_dst, int num_dst_channels,
       break;
    case GL_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(int8_t, int32_t, _mesa_snorm_to_snorm(src, 32, 8));
+         SWIZZLE_CONVERT(int8_t, int32_t, CLAMP(src, -0x80, 0x7f));
       } else {
          SWIZZLE_CONVERT(int8_t, int32_t, src);
       }
@@ -1343,7 +1344,7 @@ convert_short(void *void_dst, int num_dst_channels,
       break;
    case GL_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(int16_t, int32_t, _mesa_snorm_to_snorm(src, 32, 16));
+         SWIZZLE_CONVERT(int16_t, int32_t, CLAMP(src, -0x8000, 0x7fff));
       } else {
          SWIZZLE_CONVERT(int16_t, int32_t, src);
       }

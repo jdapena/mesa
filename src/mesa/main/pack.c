@@ -598,8 +598,8 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
    case GL_UNSIGNED_BYTE:
    case GL_BYTE:
    {
-      uint8_t swizzle[4];
-      mesa_array_format dstMesaArrayFormat;
+      mesa_array_format srcMesaArrayFormat, dstMesaArrayFormat;
+      uint32_t srcMesaFormat, dstSize;
 
       dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType, false);
       if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
@@ -608,14 +608,21 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
       } else {
          dstMesaArrayFormat.as_uint = dstMesaFormat;
       }
-      swizzle[0] = dstMesaArrayFormat.swizzle_x;
-      swizzle[1] = dstMesaArrayFormat.swizzle_y;
-      swizzle[2] = dstMesaArrayFormat.swizzle_z;
-      swizzle[3] = dstMesaArrayFormat.swizzle_w;
 
-      _mesa_swizzle_and_convert(dstAddr, dstType, dstMesaArrayFormat.num_channels,
-                                (void *)rgba[0], GL_INT, 4,
-                                swizzle, dstMesaArrayFormat.normalized, n);
+      srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_INT, false);
+      if (!(srcMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
+         assert(_mesa_is_format_color_format(srcMesaFormat));
+         srcMesaArrayFormat.as_uint = _mesa_format_to_array_format(srcMesaFormat);
+      } else {
+         srcMesaArrayFormat.as_uint = srcMesaFormat;
+      }
+
+      dstFormat = _mesa_format_from_array_format(dstMesaArrayFormat.as_uint);
+      dstSize = _mesa_get_format_bytes(dstFormat);
+      _mesa_format_convert(
+         dstAddr, dstMesaArrayFormat.as_uint, dstSize,
+         (void *)rgba, srcMesaArrayFormat.as_uint, 4*4,
+         n, 1, _mesa_get_format_base_format(dstFormat));
    }
       break;
    case GL_UNSIGNED_BYTE_3_3_2:
