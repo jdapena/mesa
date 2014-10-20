@@ -622,7 +622,7 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
       _mesa_format_convert(
          dstAddr, dstMesaArrayFormat.as_uint, dstSize,
          (void *)rgba, srcMesaArrayFormat.as_uint, 4*4,
-         n, 1, _mesa_get_format_base_format(dstFormat));
+         n, 1, _mesa_get_format_base_format(dstFormat), true);
    }
       break;
    case GL_UNSIGNED_BYTE_3_3_2:

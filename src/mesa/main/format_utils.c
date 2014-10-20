@@ -296,7 +296,8 @@ compute_component_mapping(GLenum inFormat, GLenum outFormat,
 void
 _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
                      void *void_src, uint32_t src_format, size_t src_stride,
-                     size_t width, size_t height, GLenum dst_base_format)
+                     size_t width, size_t height, GLenum dst_base_format,
+                     bool clamp)
 {
    uint8_t *dst = (uint8_t *)void_dst;
    uint8_t *src = (uint8_t *)void_src;
@@ -450,7 +451,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
       for (row = 0; row < height; ++row) {
          _mesa_swizzle_and_convert(dst, dst_gl_type, dst_array_format.num_channels,
                                    src, src_gl_type, src_array_format.num_channels,
-                                   src2dst, normalized, width);
+                                   src2dst, normalized, clamp, width);
          src += src_stride;
          dst += dst_stride;
       }
@@ -531,7 +532,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
             _mesa_swizzle_and_convert(tmp_uint + row * width, common_gl_type, 4,
                                       src, src_gl_type,
                                       src_array_format.num_channels,
-                                      src2rgba, normalized, width);
+                                      src2rgba, normalized, clamp, width);
             src += src_stride;
          }
       } else {
@@ -547,7 +548,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
             _mesa_swizzle_and_convert(dst, dst_gl_type,
                                       dst_array_format.num_channels,
                                       tmp_uint + row * width, common_gl_type, 4,
-                                      rgba2dst, normalized, width);
+                                      rgba2dst, normalized, clamp, width);
             dst += dst_stride;
          }
       } else {
@@ -568,7 +569,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
                _mesa_swizzle_and_convert(tmp_float + row * width, GL_FLOAT, 4,
                                          src, src_gl_type,
                                          src_array_format.num_channels,
-                                         src2rgba, normalized, width);
+                                         src2rgba, normalized, clamp, width);
                src += src_stride;
             }
          } else {
@@ -604,7 +605,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
                if (need_convert)
                   _mesa_swizzle_and_convert(tmp_float + row * width, GL_FLOAT, 4,
                                             tmp_float + row * width, GL_FLOAT, 4,
-                                            map, false, width);
+                                            map, false, clamp, width);
                src += src_stride;
             }
          }
@@ -614,7 +615,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
                _mesa_swizzle_and_convert(dst, dst_gl_type,
                                          dst_array_format.num_channels,
                                          tmp_float + row * width, GL_FLOAT, 4,
-                                         rgba2dst, normalized, width);
+                                         rgba2dst, normalized, clamp, width);
                dst += dst_stride;
             }
          } else {
@@ -634,7 +635,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
                _mesa_swizzle_and_convert(tmp_ubyte + row * width, GL_UNSIGNED_BYTE, 4,
                                          src, src_gl_type,
                                          src_array_format.num_channels,
-                                         src2rgba, normalized, width);
+                                         src2rgba, normalized, clamp, width);
                src += src_stride;
             }
          } else {
@@ -650,7 +651,7 @@ _mesa_format_convert(void *void_dst, uint32_t dst_format, size_t dst_stride,
                _mesa_swizzle_and_convert(dst, dst_gl_type,
                                          dst_array_format.num_channels,
                                          tmp_ubyte + row * width, GL_UNSIGNED_BYTE, 4,
-                                         rgba2dst, normalized, width);
+                                         rgba2dst, normalized, clamp, width);
                dst += dst_stride;
             }
          } else {
@@ -970,7 +971,7 @@ swizzle_convert_try_memcpy(void *dst, GLenum dst_type, int num_dst_channels,
 static void
 convert_float(void *void_dst, int num_dst_channels,
               const void *void_src, GLenum src_type, int num_src_channels,
-              const uint8_t swizzle[4], bool normalized, int count)
+              const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const float one = 1.0f;
 
@@ -1032,7 +1033,7 @@ convert_float(void *void_dst, int num_dst_channels,
 static void
 convert_half_float(void *void_dst, int num_dst_channels,
                    const void *void_src, GLenum src_type, int num_src_channels,
-                   const uint8_t swizzle[4], bool normalized, int count)
+                   const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const uint16_t one = _mesa_float_to_half(1.0f);
 
@@ -1094,7 +1095,7 @@ convert_half_float(void *void_dst, int num_dst_channels,
 static void
 convert_ubyte(void *void_dst, int num_dst_channels,
               const void *void_src, GLenum src_type, int num_src_channels,
-              const uint8_t swizzle[4], bool normalized, int count)
+              const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const uint8_t one = normalized ? UINT8_MAX : 1;
 
@@ -1160,7 +1161,7 @@ convert_ubyte(void *void_dst, int num_dst_channels,
 static void
 convert_byte(void *void_dst, int num_dst_channels,
              const void *void_src, GLenum src_type, int num_src_channels,
-             const uint8_t swizzle[4], bool normalized, int count)
+             const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const int8_t one = normalized ? INT8_MAX : 1;
 
@@ -1212,7 +1213,10 @@ convert_byte(void *void_dst, int num_dst_channels,
       break;
    case GL_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(int8_t, int32_t, CLAMP(src, -0x80, 0x7f));
+         if (clamp)
+            SWIZZLE_CONVERT(int8_t, int32_t, CLAMP(src, -0x80, 0x7f));
+         else
+            SWIZZLE_CONVERT(int8_t, int32_t, _mesa_snorm_to_snorm(src, 32, 8));
       } else {
          SWIZZLE_CONVERT(int8_t, int32_t, src);
       }
@@ -1226,10 +1230,10 @@ convert_byte(void *void_dst, int num_dst_channels,
 static void
 convert_ushort(void *void_dst, int num_dst_channels,
                const void *void_src, GLenum src_type, int num_src_channels,
-               const uint8_t swizzle[4], bool normalized, int count)
+               const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const uint16_t one = normalized ? UINT16_MAX : 1;
-   
+
    switch (src_type) {
    case GL_FLOAT:
       if (normalized) {
@@ -1292,7 +1296,7 @@ convert_ushort(void *void_dst, int num_dst_channels,
 static void
 convert_short(void *void_dst, int num_dst_channels,
               const void *void_src, GLenum src_type, int num_src_channels,
-              const uint8_t swizzle[4], bool normalized, int count)
+              const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const int16_t one = normalized ? INT16_MAX : 1;
 
@@ -1344,7 +1348,10 @@ convert_short(void *void_dst, int num_dst_channels,
       break;
    case GL_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(int16_t, int32_t, CLAMP(src, -0x8000, 0x7fff));
+         if (clamp)
+            SWIZZLE_CONVERT(int16_t, int32_t, CLAMP(src, -0x8000, 0x7fff));
+         else
+            SWIZZLE_CONVERT(int16_t, int32_t, _mesa_snorm_to_snorm(src, 32, 16));
       } else {
          SWIZZLE_CONVERT(int16_t, int32_t, src);
       }
@@ -1357,7 +1364,7 @@ convert_short(void *void_dst, int num_dst_channels,
 static void
 convert_uint(void *void_dst, int num_dst_channels,
              const void *void_src, GLenum src_type, int num_src_channels,
-             const uint8_t swizzle[4], bool normalized, int count)
+             const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const uint32_t one = normalized ? UINT32_MAX : 1;
 
@@ -1423,7 +1430,7 @@ convert_uint(void *void_dst, int num_dst_channels,
 static void
 convert_int(void *void_dst, int num_dst_channels,
             const void *void_src, GLenum src_type, int num_src_channels,
-            const uint8_t swizzle[4], bool normalized, int count)
+            const uint8_t swizzle[4], bool normalized, bool clamp, int count)
 {
    const int32_t one = normalized ? INT32_MAX : 12;
 
@@ -1537,7 +1544,8 @@ convert_int(void *void_dst, int num_dst_channels,
 void
 _mesa_swizzle_and_convert(void *void_dst, GLenum dst_type, int num_dst_channels,
                           const void *void_src, GLenum src_type, int num_src_channels,
-                          const uint8_t swizzle[4], bool normalized, int count)
+                          const uint8_t swizzle[4], bool normalized,
+                          bool clamp, int count)
 {
    if (swizzle_convert_try_memcpy(void_dst, dst_type, num_dst_channels,
                                   void_src, src_type, num_src_channels,
@@ -1547,35 +1555,35 @@ _mesa_swizzle_and_convert(void *void_dst, GLenum dst_type, int num_dst_channels,
    switch (dst_type) {
    case GL_FLOAT:
       convert_float(void_dst, num_dst_channels, void_src, src_type,
-                    num_src_channels, swizzle, normalized, count);
+                    num_src_channels, swizzle, normalized, clamp, count);
       break;
    case GL_HALF_FLOAT:
       convert_half_float(void_dst, num_dst_channels, void_src, src_type,
-                    num_src_channels, swizzle, normalized, count);
+                         num_src_channels, swizzle, normalized, clamp, count);
       break;
    case GL_UNSIGNED_BYTE:
       convert_ubyte(void_dst, num_dst_channels, void_src, src_type,
-                    num_src_channels, swizzle, normalized, count);
+                    num_src_channels, swizzle, normalized, clamp, count);
       break;
    case GL_BYTE:
       convert_byte(void_dst, num_dst_channels, void_src, src_type,
-                   num_src_channels, swizzle, normalized, count);
+                   num_src_channels, swizzle, normalized, clamp, count);
       break;
    case GL_UNSIGNED_SHORT:
       convert_ushort(void_dst, num_dst_channels, void_src, src_type,
-                     num_src_channels, swizzle, normalized, count);
+                     num_src_channels, swizzle, normalized, clamp, count);
       break;
    case GL_SHORT:
       convert_short(void_dst, num_dst_channels, void_src, src_type,
-                    num_src_channels, swizzle, normalized, count);
+                    num_src_channels, swizzle, normalized, clamp, count);
       break;
    case GL_UNSIGNED_INT:
       convert_uint(void_dst, num_dst_channels, void_src, src_type,
-                   num_src_channels, swizzle, normalized, count);
+                   num_src_channels, swizzle, normalized, clamp, count);
       break;
    case GL_INT:
       convert_int(void_dst, num_dst_channels, void_src, src_type,
-                  num_src_channels, swizzle, normalized, count);
+                  num_src_channels, swizzle, normalized, clamp, count);
       break;
    default:
       assert(!"Invalid channel type");

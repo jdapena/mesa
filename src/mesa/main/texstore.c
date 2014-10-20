@@ -1551,14 +1551,15 @@ texstore_swizzle(TEXSTORE_PARAMS)
           srcRowStride == srcWidth * src_components) {
          _mesa_swizzle_and_convert(dstSlices[img], dst_type, dst_components,
                                    srcImage, srcType, src_components,
-                                   swizzle, normalized, srcWidth * srcHeight);
+                                   swizzle, normalized, false,
+                                   srcWidth * srcHeight);
       } else {
          src_row = srcImage;
          dst_row = dstSlices[img];
          for (row = 0; row < srcHeight; row++) {
             _mesa_swizzle_and_convert(dst_row, dst_type, dst_components,
                                       src_row, srcType, src_components,
-                                      swizzle, normalized, srcWidth);
+                                      swizzle, normalized, false, srcWidth);
             dst_row += dstRowStride;
             src_row += srcRowStride;
          }
@@ -1625,7 +1626,7 @@ texstore_via_float(TEXSTORE_PARAMS)
          if (need_convert)
             _mesa_swizzle_and_convert(tmp_row, GL_FLOAT, 4,
                                       tmp_row, GL_FLOAT, 4,
-                                      map, false, srcWidth);
+                                      map, false, false, srcWidth);
          _mesa_pack_float_rgba_row(dstFormat, srcWidth,
                                    (const GLfloat (*)[4])tmp_row,
                                    dst_row);
@@ -1698,7 +1699,7 @@ texstore_rgba_integer(TEXSTORE_PARAMS)
                                       srcFormat, srcType, src_row, srcPacking);
          _mesa_swizzle_and_convert(dst_row, dst_type, num_dst_components,
                                    tmp_row, tmp_type, 4,
-                                   swizzle, false, srcWidth);
+                                   swizzle, false, false, srcWidth);
          dst_row += dstRowStride;
          src_row += src_stride;
       }
@@ -1762,7 +1763,7 @@ if (use_master_convert) {
    for (int img = 0; img < srcDepth; img++) {
       _mesa_format_convert(dstSlices[img], dstFormat, dstRowStride,
                            src, srcMesaFormat, srcRowStride,
-                           srcWidth, srcHeight, baseInternalFormat);
+                           srcWidth, srcHeight, baseInternalFormat, false);
       src += srcHeight * srcRowStride;
    }
 
