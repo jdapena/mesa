@@ -459,60 +459,6 @@ get_type_min_max(GLenum type, GLfloat *min, GLfloat *max)
    }
 }
 
-/* Customization of unsigned integer packing.
- */
-#define SRC_TYPE GLuint
-
-#define DST_TYPE GLuint
-#define SRC_CONVERT(x) (x)
-#define FN_NAME pack_uint_from_uint_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLint
-#define SRC_CONVERT(x) MIN2(x, 0x7fffffff)
-#define FN_NAME pack_int_from_uint_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLushort
-#define SRC_CONVERT(x) MIN2(x, 0xffff)
-#define FN_NAME pack_ushort_from_uint_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLshort
-#define SRC_CONVERT(x) CLAMP((int)x, -32768, 32767)
-#define FN_NAME pack_short_from_uint_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLubyte
-#define SRC_CONVERT(x) MIN2(x, 0xff)
-#define FN_NAME pack_ubyte_from_uint_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#define DST_TYPE GLbyte
-#define SRC_CONVERT(x) CLAMP((int)x, -128, 127)
-#define FN_NAME pack_byte_from_uint_rgba
-#include "pack_tmp.h"
-#undef DST_TYPE
-#undef SRC_CONVERT
-#undef FN_NAME
-
-#undef SRC_TYPE
-
 static void
 _pack_rgba_span_from_uints_problem(struct gl_context *ctx,
                                    GLenum dstFormat, GLenum dstType)
@@ -533,23 +479,11 @@ _mesa_pack_rgba_span_from_uints(struct gl_context *ctx, GLuint n, GLuint rgba[][
 
    switch(dstType) {
    case GL_UNSIGNED_INT:
-      pack_uint_from_uint_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_INT:
-      pack_int_from_uint_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_UNSIGNED_SHORT:
-      pack_ushort_from_uint_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_SHORT:
-      pack_short_from_uint_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_UNSIGNED_BYTE:
-      pack_ubyte_from_uint_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_BYTE:
-      pack_byte_from_uint_rgba(ctx, dstAddr, dstFormat, rgba, NULL, n);
-      break;
    case GL_UNSIGNED_BYTE_3_3_2:
    case GL_UNSIGNED_BYTE_2_3_3_REV:
    case GL_UNSIGNED_SHORT_5_6_5:
@@ -562,8 +496,33 @@ _mesa_pack_rgba_span_from_uints(struct gl_context *ctx, GLuint n, GLuint rgba[][
    case GL_UNSIGNED_INT_8_8_8_8_REV:
    case GL_UNSIGNED_INT_10_10_10_2:
    case GL_UNSIGNED_INT_2_10_10_10_REV:
+   {
+      mesa_array_format srcMesaArrayFormat, dstMesaArrayFormat;
+      uint32_t srcMesaFormat, dstSize;
+
       dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType, false);
-      _mesa_pack_uint_rgba_row(dstMesaFormat, n, (void *)rgba[0], (void *)dstAddr);
+      if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
+         assert(_mesa_is_format_color_format(dstMesaFormat));
+         dstMesaArrayFormat.as_uint = _mesa_format_to_array_format(dstMesaFormat);
+      } else {
+         dstMesaArrayFormat.as_uint = dstMesaFormat;
+      }
+
+      srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_UNSIGNED_INT, false);
+      if (!(srcMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
+         assert(_mesa_is_format_color_format(srcMesaFormat));
+         srcMesaArrayFormat.as_uint = _mesa_format_to_array_format(srcMesaFormat);
+      } else {
+         srcMesaArrayFormat.as_uint = srcMesaFormat;
+      }
+
+      dstFormat = _mesa_format_from_array_format(dstMesaArrayFormat.as_uint);
+      dstSize = _mesa_get_format_bytes(dstFormat);
+      _mesa_format_convert(
+         dstAddr, dstMesaArrayFormat.as_uint, dstSize,
+         (void *)rgba, srcMesaArrayFormat.as_uint, 4*4,
+         n, 1, _mesa_get_format_base_format(dstFormat), true);
+   }
       break;
 
    default:
