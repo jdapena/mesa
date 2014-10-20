@@ -1282,7 +1282,10 @@ convert_ushort(void *void_dst, int num_dst_channels,
       break;
    case GL_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint16_t, int32_t, _mesa_snorm_to_unorm(src, 32, 16));
+         if (clamp)
+            SWIZZLE_CONVERT(uint32_t, int32_t, MAX2(src, 0));
+         else
+            SWIZZLE_CONVERT(uint16_t, int32_t, _mesa_snorm_to_unorm(src, 32, 16));
       } else {
          SWIZZLE_CONVERT(uint16_t, int32_t, (src < 0) ? 0 : src);
       }
@@ -1416,7 +1419,10 @@ convert_uint(void *void_dst, int num_dst_channels,
       break;
    case GL_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint32_t, int32_t, _mesa_snorm_to_unorm(src, 32, 32));
+         if (clamp)
+            SWIZZLE_CONVERT(uint32_t, int32_t, MAX2(src, 0));
+         else
+            SWIZZLE_CONVERT(uint32_t, int32_t, _mesa_snorm_to_unorm(src, 32, 32));
       } else {
          SWIZZLE_CONVERT(uint32_t, int32_t, (src < 0) ? 0 : src);
       }
