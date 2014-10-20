@@ -1140,7 +1140,10 @@ convert_ubyte(void *void_dst, int num_dst_channels,
       break;
    case GL_UNSIGNED_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint8_t, uint32_t, _mesa_unorm_to_unorm(src, 32, 8));
+         if (clamp)
+            SWIZZLE_CONVERT(uint8_t, uint32_t, MIN2(src, 0xff));
+         else
+            SWIZZLE_CONVERT(uint8_t, uint32_t, _mesa_unorm_to_unorm(src, 32, 8));
       } else {
          SWIZZLE_CONVERT(uint8_t, uint32_t, src);
       }
@@ -1206,7 +1209,10 @@ convert_byte(void *void_dst, int num_dst_channels,
       break;
    case GL_UNSIGNED_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(int8_t, uint32_t, _mesa_unorm_to_snorm(src, 32, 8));
+         if (clamp)
+            SWIZZLE_CONVERT(int8_t, uint32_t, CLAMP((int)src, -128, 127));
+         else
+            SWIZZLE_CONVERT(int8_t, uint32_t, _mesa_unorm_to_snorm(src, 32, 8));
       } else {
          SWIZZLE_CONVERT(int8_t, uint32_t, src);
       }
@@ -1275,7 +1281,10 @@ convert_ushort(void *void_dst, int num_dst_channels,
       break;
    case GL_UNSIGNED_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint16_t, uint32_t, _mesa_unorm_to_unorm(src, 32, 16));
+         if (clamp)
+            SWIZZLE_CONVERT(uint16_t, uint32_t, MIN2(src, 0xffff));
+         else
+            SWIZZLE_CONVERT(uint16_t, uint32_t, _mesa_unorm_to_unorm(src, 32, 16));
       } else {
          SWIZZLE_CONVERT(uint16_t, uint32_t, src);
       }
@@ -1344,7 +1353,11 @@ convert_short(void *void_dst, int num_dst_channels,
       break;
    case GL_UNSIGNED_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(int16_t, uint32_t, _mesa_unorm_to_snorm(src, 32, 16));
+         if (clamp)
+            SWIZZLE_CONVERT(int16_t, uint32_t, CLAMP((int)src, -32768, 32767));
+         else
+            SWIZZLE_CONVERT(int16_t, uint32_t, _mesa_unorm_to_snorm(src, 32, 16));
+
       } else {
          SWIZZLE_CONVERT(int16_t, uint32_t, src);
       }
@@ -1485,7 +1498,10 @@ convert_int(void *void_dst, int num_dst_channels,
       break;
    case GL_UNSIGNED_INT:
       if (normalized) {
-         SWIZZLE_CONVERT(int32_t, uint32_t, _mesa_unorm_to_snorm(src, 32, 32));
+         if (clamp)
+            SWIZZLE_CONVERT(int32_t, uint32_t, MIN2(src, 0x7fffffff));
+         else
+            SWIZZLE_CONVERT(int32_t, uint32_t, _mesa_unorm_to_snorm(src, 32, 32));
       } else {
          SWIZZLE_CONVERT(int32_t, uint32_t, src);
       }
