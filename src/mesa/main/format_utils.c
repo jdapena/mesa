@@ -1102,7 +1102,10 @@ convert_ubyte(void *void_dst, int num_dst_channels,
    switch (src_type) {
    case GL_FLOAT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint8_t, float, _mesa_float_to_unorm(src, 8));
+         if (clamp)
+            SWIZZLE_CONVERT(uint8_t, float, FLOAT_TO_UBYTE(src));
+         else
+            SWIZZLE_CONVERT(uint8_t, float, _mesa_float_to_unorm(src, 8));
       } else {
          SWIZZLE_CONVERT(uint8_t, float, (src < 0) ? 0 : src);
       }
@@ -1171,7 +1174,10 @@ convert_byte(void *void_dst, int num_dst_channels,
    switch (src_type) {
    case GL_FLOAT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint8_t, float, _mesa_float_to_snorm(src, 8));
+         if (clamp)
+            SWIZZLE_CONVERT(uint8_t, float, FLOAT_TO_BYTE_TEX(src));
+         else
+            SWIZZLE_CONVERT(uint8_t, float, _mesa_float_to_snorm(src, 8));
       } else {
          SWIZZLE_CONVERT(uint8_t, float, src);
       }
@@ -1315,7 +1321,10 @@ convert_short(void *void_dst, int num_dst_channels,
    switch (src_type) {
    case GL_FLOAT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint16_t, float, _mesa_float_to_snorm(src, 16));
+         if (clamp)
+            SWIZZLE_CONVERT(uint16_t, float, FLOAT_TO_SHORT_TEX(src));
+         else
+            SWIZZLE_CONVERT(uint16_t, float, _mesa_float_to_snorm(src, 16));
       } else {
          SWIZZLE_CONVERT(uint16_t, float, src);
       }
@@ -1387,7 +1396,10 @@ convert_uint(void *void_dst, int num_dst_channels,
    switch (src_type) {
    case GL_FLOAT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint32_t, float, _mesa_float_to_unorm(src, 32));
+         if (clamp)
+            SWIZZLE_CONVERT(uint32_t, float, FLOAT_TO_UINT(src));
+         else
+            SWIZZLE_CONVERT(uint32_t, float, _mesa_float_to_unorm(src, 32));
       } else {
          SWIZZLE_CONVERT(uint32_t, float, (src < 0) ? 0 : src);
       }
@@ -1456,7 +1468,10 @@ convert_int(void *void_dst, int num_dst_channels,
    switch (src_type) {
    case GL_FLOAT:
       if (normalized) {
-         SWIZZLE_CONVERT(uint32_t, float, _mesa_float_to_snorm(src, 32));
+         if (clamp)
+            SWIZZLE_CONVERT(uint32_t, float, FLOAT_TO_INT(src));
+         else
+            SWIZZLE_CONVERT(uint32_t, float, _mesa_float_to_snorm(src, 32));
       } else {
          SWIZZLE_CONVERT(uint32_t, float, src);
       }
