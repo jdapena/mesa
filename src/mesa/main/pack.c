@@ -500,7 +500,7 @@ _mesa_pack_rgba_span_from_uints(struct gl_context *ctx, GLuint n, GLuint rgba[][
       mesa_array_format srcMesaArrayFormat, dstMesaArrayFormat;
       uint32_t srcMesaFormat, dstSize;
 
-      dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType, false);
+      dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType);
       if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
          assert(_mesa_is_format_color_format(dstMesaFormat));
          dstMesaArrayFormat.as_uint = _mesa_format_to_array_format(dstMesaFormat);
@@ -508,7 +508,7 @@ _mesa_pack_rgba_span_from_uints(struct gl_context *ctx, GLuint n, GLuint rgba[][
          dstMesaArrayFormat.as_uint = dstMesaFormat;
       }
 
-      srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_UNSIGNED_INT, false);
+      srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_UNSIGNED_INT);
       if (!(srcMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
          assert(_mesa_is_format_color_format(srcMesaFormat));
          srcMesaArrayFormat.as_uint = _mesa_format_to_array_format(srcMesaFormat);
@@ -572,7 +572,7 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
       mesa_array_format srcMesaArrayFormat, dstMesaArrayFormat;
       uint32_t srcMesaFormat, dstSize;
 
-      dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType, false);
+      dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType);
       if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
          assert(_mesa_is_format_color_format(dstMesaFormat));
          dstMesaArrayFormat.as_uint = _mesa_format_to_array_format(dstMesaFormat);
@@ -580,7 +580,7 @@ _mesa_pack_rgba_span_from_ints(struct gl_context *ctx, GLuint n, GLint rgba[][4]
          dstMesaArrayFormat.as_uint = dstMesaFormat;
       }
 
-      srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_INT, false);
+      srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_INT);
       if (!(srcMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
          assert(_mesa_is_format_color_format(srcMesaFormat));
          srcMesaArrayFormat.as_uint = _mesa_format_to_array_format(srcMesaFormat);
@@ -903,7 +903,7 @@ _mesa_pack_rgba_span_float(struct gl_context *ctx, GLuint n, GLfloat rgba[][4],
          mesa_array_format srcMesaArrayFormat, dstMesaArrayFormat;
          uint32_t srcMesaFormat, dstSize, dstBaseFormat;
 
-         dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType, false);
+         dstMesaFormat = _mesa_format_from_format_and_type(dstFormat, dstType);
          if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
             assert(_mesa_is_format_color_format(dstMesaFormat));
             dstMesaArrayFormat.as_uint = dstMesaFormat;
@@ -916,7 +916,7 @@ _mesa_pack_rgba_span_float(struct gl_context *ctx, GLuint n, GLfloat rgba[][4],
             dstBaseFormat = _mesa_get_format_base_format(dstFormat);
          }
 
-         srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_FLOAT, false);
+         srcMesaFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_FLOAT);
          if (!(srcMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
             assert(_mesa_is_format_color_format(srcMesaFormat));
             srcMesaArrayFormat.as_uint = _mesa_format_to_array_format(srcMesaFormat);
