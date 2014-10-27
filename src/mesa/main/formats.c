@@ -604,6 +604,9 @@ _mesa_format_from_format_and_type(GLenum format, GLenum type)
       if (format == GL_YCBCR_MESA)
          return MESA_FORMAT_YCBCR_REV;
       break;
+   case GL_UNSIGNED_INT_10F_11F_11F_REV:
+      if (format == GL_RGB)
+         return MESA_FORMAT_R11G11B10_FLOAT;
    default:
       break;
    }
