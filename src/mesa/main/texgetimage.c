@@ -489,7 +489,6 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
 
                mesa_array_format dstMesaArrayFormat;
                uint32_t srcSize, dstSize, dstMesaFormat;
-               
                dstMesaFormat = _mesa_format_from_format_and_type(format, type);
                if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
                   assert(_mesa_is_format_color_format(dstMesaFormat));
@@ -499,6 +498,13 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
                   dstMesaArrayFormat.as_uint = dstMesaFormat;
                   dstMesaFormat = _mesa_format_from_array_format(dstMesaArrayFormat.as_uint);
                   dstSize = _mesa_get_format_bytes(dstMesaFormat);
+               }
+
+               if (rebaseFormat) {
+                  if (tex_is_integer)
+                     _mesa_rebase_rgba_uint(width, src, rebaseFormat);
+                  else
+                     _mesa_rebase_rgba_float(width, src, rebaseFormat);
                }
 
                srcSize = _mesa_get_format_bytes(texFormat);
