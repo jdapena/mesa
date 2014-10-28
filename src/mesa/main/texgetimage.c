@@ -489,23 +489,42 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
 
                mesa_array_format dstMesaArrayFormat;
                uint32_t dstSize, dstMesaFormat;
-               dstMesaFormat = _mesa_format_from_format_and_type(format, type);
-               if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
-                  assert(_mesa_is_format_color_format(dstMesaFormat));
-                  dstMesaArrayFormat.as_uint = dstMesaFormat;
-                  dstSize = _mesa_get_format_bytes(dstMesaFormat);
-               } else {
-                  dstMesaArrayFormat.as_uint = dstMesaFormat;
-                  dstMesaFormat = _mesa_format_from_array_format(dstMesaArrayFormat.as_uint);
-                  dstSize = _mesa_get_format_bytes(dstMesaFormat);
+
+               if (rebaseFormat || texImage->_BaseFormat == GL_LUMINANCE ||
+                   texImage->_BaseFormat == GL_LUMINANCE_ALPHA ||
+                   texImage->_BaseFormat == GL_LUMINANCE_INTEGER_EXT ||
+                   texImage->_BaseFormat == GL_LUMINANCE_ALPHA_INTEGER_EXT ||
+                   texImage->_BaseFormat == GL_INTENSITY ||
+                   texImage->_BaseFormat == GL_ALPHA) {
+                  if (tex_is_integer) {
+                     _mesa_unpack_uint_rgba_row(texFormat, width, src, rgba_uint);
+                     if (rebaseFormat)
+                        _mesa_rebase_rgba_uint(width, rgba_uint, rebaseFormat);
+                     if (tex_is_uint) {
+                        _mesa_pack_rgba_span_from_uints(ctx, width,
+                                                        (GLuint (*)[4]) rgba_uint,
+                                                        format, type, dest);
+                     } else {
+                        _mesa_pack_rgba_span_from_ints(ctx, width,
+                                                       (GLint (*)[4]) rgba_uint,
+                                                       format, type, dest);
+                     }
+                  } else {
+                     _mesa_unpack_rgba_row(texFormat, width, src, rgba);
+                     if (rebaseFormat)
+                        _mesa_rebase_rgba_float(width, rgba, rebaseFormat);
+                     _mesa_pack_rgba_span_float(ctx, width, (GLfloat (*)[4]) rgba,
+                                                format, type, dest,
+                                                &ctx->Pack, transferOps);
+                  }
+                  continue;
                }
 
-               if (rebaseFormat) {
-                  if (tex_is_integer)
-                     _mesa_rebase_rgba_uint(width, src, rebaseFormat);
-                  else
-                     _mesa_rebase_rgba_float(width, src, rebaseFormat);
-               }
+               dstMesaFormat = _mesa_format_from_format_and_type(format, type);
+               dstMesaArrayFormat.as_uint = dstMesaFormat;
+               if (dstMesaFormat & MESA_ARRAY_FORMAT_BIT)
+                  dstMesaFormat = _mesa_format_from_array_format(dstMesaArrayFormat.as_uint);
+               dstSize = _mesa_get_format_bytes(dstMesaFormat);
 
                _mesa_format_convert(
                   dest, dstMesaArrayFormat.as_uint, dstSize*width,
