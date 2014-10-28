@@ -488,7 +488,7 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
                                                 img, row, 0);
 
                mesa_array_format dstMesaArrayFormat;
-               uint32_t srcSize, dstSize, dstMesaFormat;
+               uint32_t dstSize, dstMesaFormat;
                dstMesaFormat = _mesa_format_from_format_and_type(format, type);
                if (!(dstMesaFormat & MESA_ARRAY_FORMAT_BIT)) {
                   assert(_mesa_is_format_color_format(dstMesaFormat));
@@ -507,11 +507,9 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
                      _mesa_rebase_rgba_float(width, src, rebaseFormat);
                }
 
-               srcSize = _mesa_get_format_bytes(texFormat);
-
                _mesa_format_convert(
-                  dest, dstMesaArrayFormat.as_uint, dstSize,
-                  (void *)src, texFormat, srcSize,
+                  dest, dstMesaArrayFormat.as_uint, dstSize*width,
+                  (void *)src, texFormat, rowstride,
                   width, 1, destBaseFormat, true);
             }
             /* Unmap the src texture buffer */
