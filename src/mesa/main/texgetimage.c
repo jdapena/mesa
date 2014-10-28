@@ -510,7 +510,7 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
                _mesa_format_convert(
                   dest, dstMesaArrayFormat.as_uint, dstSize*width,
                   (void *)src, texFormat, rowstride,
-                  width, 1, destBaseFormat, true);
+                  width, 1, destBaseFormat);
             }
             /* Unmap the src texture buffer */
             ctx->Driver.UnmapTextureImage(ctx, texImage, img);
