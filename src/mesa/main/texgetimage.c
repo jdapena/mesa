@@ -45,7 +45,7 @@
 #include "texgetimage.h"
 #include "teximage.h"
 #include "texstore.h"
-
+#include "format_utils.h"
 
 
 /**
@@ -475,6 +475,7 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
       for (img = 0; img < depth; img++) {
          GLubyte *srcMap;
          GLint rowstride;
+         mesa_format finalTexFormat = texFormat;
 
          /* map src texture buffer */
          ctx->Driver.MapTextureImage(ctx, texImage, img,
@@ -500,24 +501,21 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
                      _mesa_unpack_uint_rgba_row(texFormat, width, src, rgba_uint);
                      if (rebaseFormat)
                         _mesa_rebase_rgba_uint(width, rgba_uint, rebaseFormat);
+
                      if (tex_is_uint) {
-                        _mesa_pack_rgba_span_from_uints(ctx, width,
-                                                        (GLuint (*)[4]) rgba_uint,
-                                                        format, type, dest);
+                        finalTexFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_UNSIGNED_INT);
                      } else {
-                        _mesa_pack_rgba_span_from_ints(ctx, width,
-                                                       (GLint (*)[4]) rgba_uint,
-                                                       format, type, dest);
+                        finalTexFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_INT);
                      }
+                     src = rgba;
                   } else {
                      _mesa_unpack_rgba_row(texFormat, width, src, rgba);
                      if (rebaseFormat)
                         _mesa_rebase_rgba_float(width, rgba, rebaseFormat);
-                     _mesa_pack_rgba_span_float(ctx, width, (GLfloat (*)[4]) rgba,
-                                                format, type, dest,
-                                                &ctx->Pack, transferOps);
+
+                     finalTexFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_FLOAT);
+                     src = rgba;
                   }
-                  continue;
                }
 
                dstMesaFormat = _mesa_format_from_format_and_type(format, type);
@@ -528,7 +526,7 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
 
                _mesa_format_convert(
                   dest, dstMesaArrayFormat.as_uint, dstSize*width,
-                  (void *)src, texFormat, rowstride,
+                  (void *)src, finalTexFormat, rowstride,
                   width, 1, destBaseFormat);
             }
             /* Unmap the src texture buffer */
