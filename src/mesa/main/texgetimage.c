@@ -372,36 +372,37 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
                           struct gl_texture_image *texImage,
                           GLbitfield transferOps)
 {
-   /* don't want to apply sRGB -> RGB conversion here so override the format */
-   const mesa_format texFormat =
-      _mesa_get_srgb_format_linear(texImage->TexFormat);
    const GLuint width = texImage->Width;
-   GLenum destBaseFormat = _mesa_base_pack_format(format);
-   GLenum rebaseFormat = GL_NONE;
    GLuint height = texImage->Height;
    GLuint depth = texImage->Depth;
-   GLuint img, row;
-   GLfloat (*rgba)[4];
-   GLuint (*rgba_uint)[4];
-   GLboolean tex_is_integer = _mesa_is_format_integer_color(texImage->TexFormat);
-   GLboolean tex_is_uint = _mesa_is_format_unsigned(texImage->TexFormat);
-   GLenum texBaseFormat = _mesa_get_format_base_format(texImage->TexFormat);
-   bool use_master_convert = true;
-
-   /* Allocate buffer for one row of texels */
-   rgba = malloc(4 * width * sizeof(GLfloat));
-   rgba_uint = (GLuint (*)[4]) rgba;
-   if (!rgba) {
-      _mesa_error(ctx, GL_OUT_OF_MEMORY, "glGetTexImage()");
-      return;
-   }
-
    if (texImage->TexObject->Target == GL_TEXTURE_1D_ARRAY) {
       depth = height;
       height = 1;
    }
 
-   /* XXX: Remove all this rebaseFormat code?? */
+   /* Describe the dst format */
+   GLboolean dst_is_integer = _mesa_is_enum_format_integer(format);
+   uint32_t dst_mesa_format = _mesa_format_from_format_and_type(format, type);
+   mesa_array_format dst_array_format;
+   dst_array_format.as_uint = dst_mesa_format;
+   if (dst_mesa_format & MESA_ARRAY_FORMAT_BIT)
+      dst_mesa_format = _mesa_format_from_array_format(dst_mesa_format);
+   GLenum dst_base_format = _mesa_base_pack_format(format);
+   int dst_stride = _mesa_get_format_bytes(dst_mesa_format) * width;
+
+   /* Describe the src format */
+   GLboolean src_is_integer = _mesa_is_format_integer_color(texImage->TexFormat);
+   /* don't want to apply sRGB -> RGB conversion here so override the format */
+   const mesa_format src_format =
+      _mesa_get_srgb_format_linear(texImage->TexFormat);
+   GLenum src_base_format = _mesa_get_format_base_format(texImage->TexFormat);
+   int src_stride;
+   GLboolean src_is_uint = _mesa_is_format_unsigned(texImage->TexFormat);
+
+
+   /* Resolve rebase format */
+   /* @FIXME: move this to a separate func? */
+   GLenum rebaseFormat = GL_NONE;
 
    if (texImage->_BaseFormat == GL_LUMINANCE ||
        texImage->_BaseFormat == GL_INTENSITY ||
@@ -415,182 +416,143 @@ get_tex_rgba_uncompressed(struct gl_context *ctx, GLuint dimensions,
    else if ((texImage->_BaseFormat == GL_RGBA ||
              texImage->_BaseFormat == GL_RGB ||
              texImage->_BaseFormat == GL_RG) &&
-            (destBaseFormat == GL_LUMINANCE ||
-             destBaseFormat == GL_LUMINANCE_ALPHA ||
-             destBaseFormat == GL_LUMINANCE_INTEGER_EXT ||
-             destBaseFormat == GL_LUMINANCE_ALPHA_INTEGER_EXT)) {
+            (dst_base_format == GL_LUMINANCE ||
+             dst_base_format == GL_LUMINANCE_ALPHA ||
+             dst_base_format == GL_LUMINANCE_INTEGER_EXT ||
+             dst_base_format == GL_LUMINANCE_ALPHA_INTEGER_EXT)) {
       /* If we're reading back an RGB(A) texture as luminance then we need
        * to return L=tex(R).  Note, that's different from glReadPixels which
        * returns L=R+G+B.
        */
       rebaseFormat = GL_LUMINANCE_ALPHA; /* this covers GL_LUMINANCE too */
    }
-   else if (texImage->_BaseFormat != texBaseFormat) {
+   else if (texImage->_BaseFormat != src_base_format) {
       /* The internal format and the real format differ, so we can't rely
        * on the unpack functions setting the correct constant values.
        * (e.g. reading back GL_RGB8 which is actually RGBA won't set alpha=1)
        */
       switch (texImage->_BaseFormat) {
       case GL_RED:
-         if ((texBaseFormat == GL_RGBA ||
-              texBaseFormat == GL_RGB ||
-              texBaseFormat == GL_RG) &&
-             (destBaseFormat == GL_RGBA ||
-              destBaseFormat == GL_RGB ||
-              destBaseFormat == GL_RG ||
-              destBaseFormat == GL_GREEN)) {
+         if ((src_base_format == GL_RGBA ||
+              src_base_format == GL_RGB ||
+              src_base_format == GL_RG) &&
+             (dst_base_format == GL_RGBA ||
+              dst_base_format == GL_RGB ||
+              dst_base_format == GL_RG ||
+              dst_base_format == GL_GREEN)) {
             rebaseFormat = texImage->_BaseFormat;
             break;
          }
          /* fall through */
       case GL_RG:
-         if ((texBaseFormat == GL_RGBA ||
-              texBaseFormat == GL_RGB) &&
-             (destBaseFormat == GL_RGBA ||
-              destBaseFormat == GL_RGB ||
-              destBaseFormat == GL_BLUE)) {
+         if ((src_base_format == GL_RGBA ||
+              src_base_format == GL_RGB) &&
+             (dst_base_format == GL_RGBA ||
+              dst_base_format == GL_RGB ||
+              dst_base_format == GL_BLUE)) {
             rebaseFormat = texImage->_BaseFormat;
             break;
          }
          /* fall through */
       case GL_RGB:
-         if (texBaseFormat == GL_RGBA &&
-             (destBaseFormat == GL_RGBA ||
-              destBaseFormat == GL_ALPHA ||
-              destBaseFormat == GL_LUMINANCE_ALPHA)) {
+         if (src_base_format == GL_RGBA &&
+             (dst_base_format == GL_RGBA ||
+              dst_base_format == GL_ALPHA ||
+              dst_base_format == GL_LUMINANCE_ALPHA)) {
             rebaseFormat = texImage->_BaseFormat;
          }
          break;
 
       case GL_ALPHA:
-         if (destBaseFormat != GL_ALPHA) {
+         if (dst_base_format != GL_ALPHA) {
             rebaseFormat = texImage->_BaseFormat;
          }
          break;
       }
    }
 
-   if (use_master_convert) {
+   /* Since _mesa_format_convert does not handle transferOps we need to handle
+    * them before we call the function. This requires to convert to RGBA float
+    * first so we can call _mesa_apply_rgba_transfer_ops. If the dst format is
+    * integer we can ignore transferOps.
+    *
+    * Some source formats (Luminance) will also require to be rebased to obtain
+    * the expected results and this also requires to convert to RGBA first.
+    */
+   assert(!transferOps || (transferOps && !dst_is_integer));
+   bool needs_rgba = rebaseFormat ||
+      texImage->_BaseFormat == GL_LUMINANCE ||
+      texImage->_BaseFormat == GL_LUMINANCE_ALPHA ||
+      texImage->_BaseFormat == GL_LUMINANCE_INTEGER_EXT ||
+      texImage->_BaseFormat == GL_LUMINANCE_ALPHA_INTEGER_EXT ||
+      texImage->_BaseFormat == GL_INTENSITY;
+   GLfloat (*rgba)[4] = NULL;
 
-      for (img = 0; img < depth; img++) {
-         GLubyte *srcMap;
-         GLint rowstride;
-         mesa_format finalTexFormat = texFormat;
+   GLuint img, row;
+   for (img = 0; img < depth; img++) {
+      GLubyte *srcMap;
+      mesa_format final_src_format = src_format;
 
-         /* map src texture buffer */
-         ctx->Driver.MapTextureImage(ctx, texImage, img,
-                                     0, 0, width, height, GL_MAP_READ_BIT,
-                                     &srcMap, &rowstride);
-         if (srcMap) {
-            for (row = 0; row < height; row++) {
-               const GLubyte *src = srcMap + row * rowstride;
-               void *dest = _mesa_image_address(dimensions, &ctx->Pack, pixels,
-                                                width, height, format, type,
-                                                img, row, 0);
-
-               mesa_array_format dstMesaArrayFormat;
-               uint32_t dstSize, dstMesaFormat;
-
-               if (rebaseFormat || texImage->_BaseFormat == GL_LUMINANCE ||
-                   texImage->_BaseFormat == GL_LUMINANCE_ALPHA ||
-                   texImage->_BaseFormat == GL_LUMINANCE_INTEGER_EXT ||
-                   texImage->_BaseFormat == GL_LUMINANCE_ALPHA_INTEGER_EXT ||
-                   texImage->_BaseFormat == GL_INTENSITY ||
-                   texImage->_BaseFormat == GL_ALPHA) {
-                  if (tex_is_integer) {
-                     _mesa_unpack_uint_rgba_row(texFormat, width, src, rgba_uint);
-                     if (rebaseFormat)
-                        _mesa_rebase_rgba_uint(width, rgba_uint, rebaseFormat);
-
-                     if (tex_is_uint) {
-                        finalTexFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_UNSIGNED_INT);
-                     } else {
-                        finalTexFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_INT);
-                     }
-                     src = rgba;
-                  } else {
-                     _mesa_unpack_rgba_row(texFormat, width, src, rgba);
-                     if (rebaseFormat)
-                        _mesa_rebase_rgba_float(width, rgba, rebaseFormat);
-
-                     finalTexFormat = _mesa_format_from_format_and_type(GL_RGBA, GL_FLOAT);
-                     src = rgba;
-                  }
-               }
-
-               dstMesaFormat = _mesa_format_from_format_and_type(format, type);
-               dstMesaArrayFormat.as_uint = dstMesaFormat;
-               if (dstMesaFormat & MESA_ARRAY_FORMAT_BIT)
-                  dstMesaFormat = _mesa_format_from_array_format(dstMesaArrayFormat.as_uint);
-               dstSize = _mesa_get_format_bytes(dstMesaFormat);
-
-               _mesa_format_convert(
-                  dest, dstMesaArrayFormat.as_uint, dstSize*width,
-                  (void *)src, finalTexFormat, rowstride,
-                  width, 1, destBaseFormat);
-            }
-            /* Unmap the src texture buffer */
-            ctx->Driver.UnmapTextureImage(ctx, texImage, img);
-         } else {
-            _mesa_error(ctx, GL_OUT_OF_MEMORY, "glGetTexImage");
-            break;
-         }
-         
+      /* map src texture buffer */
+      ctx->Driver.MapTextureImage(ctx, texImage, img,
+                                  0, 0, width, height, GL_MAP_READ_BIT,
+                                  &srcMap, &src_stride);
+      if (!srcMap) {
+         _mesa_error(ctx, GL_OUT_OF_MEMORY, "glGetTexImage");
+         break;
       }
 
-      /* XXX: Delete rgba */
-      free(rgba);
-   } else {
+      for (row = 0; row < height; row++) {
+         GLubyte *src = srcMap + row * src_stride;
+         void *dest = _mesa_image_address(dimensions, &ctx->Pack, pixels,
+                                          width, height, format, type,
+                                          img, row, 0);
 
-      for (img = 0; img < depth; img++) {
-         GLubyte *srcMap;
-         GLint rowstride;
+         if (needs_rgba) {
+            GLenum rgba_type;
 
-         /* map src texture buffer */
-         ctx->Driver.MapTextureImage(ctx, texImage, img,
-                                     0, 0, width, height, GL_MAP_READ_BIT,
-                                     &srcMap, &rowstride);
-         if (srcMap) {
-            for (row = 0; row < height; row++) {
-               const GLubyte *src = srcMap + row * rowstride;
-               void *dest = _mesa_image_address(dimensions, &ctx->Pack, pixels,
-                                                width, height, format, type,
-                                                img, row, 0);
-
-               if (tex_is_integer) {
-                  _mesa_unpack_uint_rgba_row(texFormat, width, src, rgba_uint);
-                  if (rebaseFormat)
-                     _mesa_rebase_rgba_uint(width, rgba_uint, rebaseFormat);
-                  if (tex_is_uint) {
-                     _mesa_pack_rgba_span_from_uints(ctx, width,
-                                                     (GLuint (*)[4]) rgba_uint,
-                                                     format, type, dest);
-                  } else {
-                     _mesa_pack_rgba_span_from_ints(ctx, width,
-                                                    (GLint (*)[4]) rgba_uint,
-                                                    format, type, dest);
-                  }
-               } else {
-                  _mesa_unpack_rgba_row(texFormat, width, src, rgba);
-                  if (rebaseFormat)
-                     _mesa_rebase_rgba_float(width, rgba, rebaseFormat);
-                  _mesa_pack_rgba_span_float(ctx, width, (GLfloat (*)[4]) rgba,
-                                             format, type, dest,
-                                             &ctx->Pack, transferOps);
+            /* Allocate buffer for one row of texels, if not done yet */
+            if (rgba == NULL) {
+               rgba = malloc(4 * width * sizeof(GLfloat));
+               if (!rgba) {
+                  _mesa_error(ctx, GL_OUT_OF_MEMORY, "glGetTexImage()");
+                  ctx->Driver.UnmapTextureImage(ctx, texImage, img);
+                  return;
                }
             }
 
-            /* Unmap the src texture buffer */
-            ctx->Driver.UnmapTextureImage(ctx, texImage, img);
+            if (src_is_integer) {
+               GLuint (*rgba_uint)[4] = (GLuint (*)[4]) rgba;
+               _mesa_unpack_uint_rgba_row(src_format, width, src, rgba_uint);
+
+               if (rebaseFormat)
+                  _mesa_rebase_rgba_uint(width, rgba_uint, rebaseFormat);
+
+               rgba_type = src_is_uint ? GL_UNSIGNED_INT : GL_INT;
+            } else {
+               _mesa_unpack_rgba_row(src_format, width, src, rgba);
+               if (rebaseFormat)
+                  _mesa_rebase_rgba_float(width, rgba, rebaseFormat);
+
+               rgba_type = GL_FLOAT;
+            }
+
+            final_src_format = _mesa_format_from_format_and_type(GL_RGBA, rgba_type);
+            src = (GLubyte *)rgba;
          }
-         else {
-            _mesa_error(ctx, GL_OUT_OF_MEMORY, "glGetTexImage");
-            break;
-         }
+
+         _mesa_format_convert(dest, dst_array_format.as_uint, dst_stride,
+                              (void *)src, final_src_format, src_stride,
+                              width, 1, dst_base_format);
       }
 
-      free(rgba);
+      /* Unmap the src texture buffer */
+      ctx->Driver.UnmapTextureImage(ctx, texImage, img);
    }
+
+   /* Delete rgba if used */
+   if (rgba)
+      free(rgba);
 }
 
 
