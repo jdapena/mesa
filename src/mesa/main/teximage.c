@@ -53,6 +53,7 @@
 #include "mtypes.h"
 #include "glformats.h"
 #include "texstore.h"
+#include "pbo.h"
 
 
 /**
@@ -2110,7 +2111,8 @@ texture_error_check( struct gl_context *ctx,
                      GLint level, GLint internalFormat,
                      GLenum format, GLenum type,
                      GLint width, GLint height,
-                     GLint depth, GLint border )
+                     GLint depth, GLint border,
+                     const GLvoid *pixels )
 {
    GLenum err;
 
@@ -2192,6 +2194,13 @@ texture_error_check( struct gl_context *ctx,
                   "glTexImage%dD(incompatible format = %s, type = %s)",
                   dimensions, _mesa_lookup_enum_by_nr(format),
                   _mesa_lookup_enum_by_nr(type));
+      return GL_TRUE;
+   }
+
+   /* validate the bound PBO, if any */
+   if (!_mesa_validate_pbo_source(ctx, dimensions, &ctx->Unpack,
+                                  width, height, depth, format, type,
+                                  INT_MAX, pixels, "glTexImage")) {
       return GL_TRUE;
    }
 
@@ -2291,7 +2300,7 @@ compressed_texture_error_check(struct gl_context *ctx, GLint dimensions,
                                GLenum target, GLint level,
                                GLenum internalFormat, GLsizei width,
                                GLsizei height, GLsizei depth, GLint border,
-                               GLsizei imageSize)
+                               GLsizei imageSize, const GLvoid *data)
 {
    const GLint maxLevels = _mesa_max_texture_levels(ctx, target);
    GLint expectedSize;
@@ -2316,6 +2325,12 @@ compressed_texture_error_check(struct gl_context *ctx, GLint dimensions,
       _mesa_error(ctx, GL_INVALID_ENUM,
                   "glCompressedTexImage%dD(internalFormat=%s)",
                   dimensions, _mesa_lookup_enum_by_nr(internalFormat));
+      return GL_TRUE;
+   }
+
+   /* validate the bound PBO, if any */
+   if (!_mesa_validate_pbo_source_compressed(ctx, dimensions, &ctx->Unpack,
+                                     imageSize, data, "glCompressedTexImage")) {
       return GL_TRUE;
    }
 
@@ -2451,7 +2466,8 @@ texsubimage_error_check(struct gl_context *ctx, GLuint dimensions,
                         GLenum target, GLint level,
                         GLint xoffset, GLint yoffset, GLint zoffset,
                         GLint width, GLint height, GLint depth,
-                        GLenum format, GLenum type, bool dsa)
+                        GLenum format, GLenum type, const GLvoid *pixels,
+                        bool dsa)
 {
    struct gl_texture_image *texImage;
    GLenum err;
@@ -2500,6 +2516,13 @@ texsubimage_error_check(struct gl_context *ctx, GLuint dimensions,
                   "glTex%sSubImage%dD(incompatible format = %s, type = %s)",
                   suffix, dimensions, _mesa_lookup_enum_by_nr(format),
                   _mesa_lookup_enum_by_nr(type));
+      return GL_TRUE;
+   }
+
+   /* validate the bound PBO, if any */
+   if (!_mesa_validate_pbo_source(ctx, dimensions, &ctx->Unpack,
+                                  width, height, depth, format, type,
+                                  INT_MAX, pixels, "glTexSubImage")) {
       return GL_TRUE;
    }
 
@@ -3215,12 +3238,13 @@ teximage(struct gl_context *ctx, GLboolean compressed, GLuint dims,
       if (compressed_texture_error_check(ctx, dims, target, level,
                                          internalFormat,
                                          width, height, depth,
-                                         border, imageSize))
+                                         border, imageSize, pixels))
          return;
    }
    else {
       if (texture_error_check(ctx, dims, target, level, internalFormat,
-                              format, type, width, height, depth, border))
+                              format, type, width, height, depth, border,
+                              pixels))
          return;
    }
 
@@ -3570,7 +3594,8 @@ texsubimage(struct gl_context *ctx, GLuint dims, GLenum target, GLint level,
 
    if (texsubimage_error_check(ctx, dims, texObj, target, level,
                                xoffset, yoffset, zoffset,
-                               width, height, depth, format, type, false)) {
+                               width, height, depth, format, type,
+                               pixels, false)) {
       return;   /* error was detected */
    }
 
@@ -3624,7 +3649,8 @@ texturesubimage(struct gl_context *ctx, GLuint dims,
 
    if (texsubimage_error_check(ctx, dims, texObj, texObj->Target, level,
                                xoffset, yoffset, zoffset,
-                               width, height, depth, format, type, true)) {
+                               width, height, depth, format, type,
+                               pixels, true)) {
       return;   /* error was detected */
    }
 
@@ -4633,7 +4659,8 @@ compressed_subtexture_error_check(struct gl_context *ctx, GLint dims,
                                   GLenum target, GLint level,
                                   GLint xoffset, GLint yoffset, GLint zoffset,
                                   GLsizei width, GLsizei height, GLsizei depth,
-                                  GLenum format, GLsizei imageSize, bool dsa)
+                                  GLenum format, GLsizei imageSize,
+                                  const GLvoid *data, bool dsa)
 {
    struct gl_texture_image *texImage;
    GLint expectedSize;
@@ -4650,6 +4677,12 @@ compressed_subtexture_error_check(struct gl_context *ctx, GLint dims,
       _mesa_error(ctx, GL_INVALID_VALUE,
                   "glCompressedTex%sSubImage%uD(level=%d)",
                   suffix, dims, level);
+      return GL_TRUE;
+   }
+
+   /* validate the bound PBO, if any */
+   if (!_mesa_validate_pbo_source_compressed(ctx, dims, &ctx->Unpack,
+                                     imageSize, data, "glCompressedTexImage")) {
       return GL_TRUE;
    }
 
@@ -4758,7 +4791,7 @@ _mesa_compressed_texture_sub_image(struct gl_context *ctx, GLuint dims,
    if (compressed_subtexture_error_check(ctx, dims, texObj, target,
                                          level, xoffset, yoffset, zoffset,
                                          width, height, depth,
-                                         format, imageSize, dsa)) {
+                                         format, imageSize, data, dsa)) {
       return;
    }
 
