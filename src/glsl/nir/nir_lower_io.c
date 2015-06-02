@@ -198,9 +198,34 @@ get_io_offset(nir_deref_var *deref, nir_instr *instr, nir_src *indirect,
          nir_deref_array *deref_array = nir_deref_as_array(tail);
          unsigned size = type_size(tail->type);
 
-         base_offset += size * deref_array->base_offset;
+         if (deref_array->deref_array_type == nir_deref_array_type_direct) {
+            if (!found_indirect) {
+               base_offset += size * deref_array->base_offset;
+            } else {
+               nir_load_const_instr *load_const =
+                  nir_load_const_instr_create(state->mem_ctx, 1);
 
-         if (deref_array->deref_array_type == nir_deref_array_type_indirect) {
+               load_const->value.u[0] = size * deref_array->base_offset;
+               if (state->stage != MESA_SHADER_FRAGMENT) {
+                  int vector_elements = glsl_get_vector_elements(tail->type);
+                  if (vector_elements)
+                     load_const->value.u[0] = size / vector_elements;
+               }
+
+               nir_instr_insert_before(instr, &load_const->instr);
+
+               nir_alu_instr *add = nir_alu_instr_create(state->mem_ctx, nir_op_iadd);
+               add->src[0].src = *indirect;
+               add->src[1].src.is_ssa = true;
+               add->src[1].src.ssa = &load_const->def;
+               add->dest.write_mask = 1;
+               nir_ssa_dest_init(&add->instr, &add->dest.dest, 1, NULL);
+               nir_instr_insert_before(instr, &add->instr);
+
+               indirect->is_ssa = true;
+               indirect->ssa = &add->dest.dest.ssa;
+            }
+         } else if (deref_array->deref_array_type == nir_deref_array_type_indirect) {
             nir_load_const_instr *load_const =
                nir_load_const_instr_create(state->mem_ctx, 1);
 
