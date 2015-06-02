@@ -224,9 +224,6 @@ vec4_visitor::nir_setup_uniforms(nir_shader *shader)
          if (var->interface_type != NULL || var->type->contains_atomic())
             continue;
 
-         assert(uniforms < uniform_array_size);
-         this->uniform_size[uniforms] = type_size(var->type);
-
          if (strncmp(var->name, "gl_", 3) == 0)
             nir_setup_builtin_uniform(var);
          else
@@ -270,29 +267,39 @@ vec4_visitor::nir_setup_uniform(nir_variable *var)
        }
 
        gl_constant_value *components = storage->storage;
-       unsigned vector_count = (MAX2(storage->array_elements, 1) *
-                                storage->type->matrix_columns);
-
-       for (unsigned s = 0; s < vector_count; s++) {
+       for (unsigned a = 0; a < MAX2(storage->array_elements, 1); a++) {
           assert(uniforms < uniform_array_size);
-          uniform_vector_size[uniforms] = storage->type->vector_elements;
-
-          int i;
-          for (i = 0; i < uniform_vector_size[uniforms]; i++) {
-             stage_prog_data->param[uniforms * 4 + i] = components;
-             components++;
-          }
-          for (; i < 4; i++) {
-             static gl_constant_value zero = { 0.0 };
-             stage_prog_data->param[uniforms * 4 + i] = &zero;
+          if (storage->type->is_array()) {
+             this->uniform_size[uniforms] =
+                type_size(storage->type->fields.array) * (MAX2(storage->array_elements, 1) - a);
+          } else if (var ->type->is_array() && storage->array_elements > 1) {
+             this->uniform_size[uniforms] =
+                type_size(var->type->fields.array) * (MAX2(storage->array_elements, 1) - a);
+          } else {
+             this->uniform_size[uniforms] = type_size(var->type);
           }
 
-          int uniform_offset =
-            var->data.driver_location + offset * uniform_vector_size[uniforms];
-          nir_uniform_offsets[uniform_offset] = uniforms;
-          offset++;
+          for (int c = 0; c < storage->type->matrix_columns; c++) {
+             assert(uniforms < uniform_array_size);
+             uniform_vector_size[uniforms] = storage->type->vector_elements;
 
-          uniforms++;
+             int i;
+             for (i = 0; i < uniform_vector_size[uniforms]; i++) {
+                stage_prog_data->param[uniforms * 4 + i] = components;
+                components++;
+             }
+             for (; i < 4; i++) {
+                static gl_constant_value zero = { 0.0 };
+                stage_prog_data->param[uniforms * 4 + i] = &zero;
+             }
+
+             int uniform_offset =
+               var->data.driver_location + offset * uniform_vector_size[uniforms];
+             nir_uniform_offsets[uniform_offset] = uniforms;
+             offset++;
+
+             uniforms++;
+          }
        }
     }
 }
