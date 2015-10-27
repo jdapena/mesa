@@ -43,6 +43,19 @@ _mesa_query_samples_for_format(struct gl_context *ctx, GLenum target,
    return 1;
 }
 
+void
+_mesa_query_internal_format_default(struct gl_context *ctx, GLenum target,
+                                    GLenum internalFormat, GLenum pname,
+                                    GLint *params)
+{
+   (void) ctx;
+   (void) target;
+   (void) internalFormat;
+   (void) pname;
+   (void) params;
+
+   /* @TODO */
+}
 
 void GLAPIENTRY
 _mesa_GetInternalformativ(GLenum target, GLenum internalformat, GLenum pname,
