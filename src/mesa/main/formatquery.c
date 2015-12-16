@@ -28,6 +28,7 @@
 #include "enums.h"
 #include "fbobject.h"
 #include "formatquery.h"
+#include "teximage.h"
 
 /* Handles the cases where either ARB_internalformat_query or
  * ARB_internalformat_query2 have to return an error.
@@ -361,6 +362,55 @@ _set_default_response(GLenum pname, GLint buffer[16])
    default:
       unreachable("invalid 'pname'");
    }
+}
+
+static bool
+_is_target_supported(struct gl_context *ctx, GLenum target)
+{
+   /* The ARB_internalformat_query2 spec says:
+    *
+    *     "if a particular type of <target> is not supported by the
+    *     implementation the "unsupported" answer should be given.
+    *     This is not an error."
+    */
+   switch(target){
+   case GL_TEXTURE_2D:
+   case GL_TEXTURE_3D:
+   case GL_TEXTURE_1D:
+   case GL_TEXTURE_1D_ARRAY:
+   case GL_TEXTURE_2D_ARRAY:
+   case GL_TEXTURE_CUBE_MAP:
+   case GL_TEXTURE_CUBE_MAP_ARRAY:
+   case GL_TEXTURE_RECTANGLE:
+      if (!(_mesa_legal_teximage_target(ctx, 1, target) ||
+            _mesa_legal_teximage_target(ctx, 2, target) ||
+            _mesa_legal_teximage_target(ctx, 3, target)))
+         return false;
+      break;
+
+   case GL_TEXTURE_BUFFER:
+      if (!(ctx->API == API_OPENGL_CORE &&
+            ctx->Extensions.ARB_texture_buffer_object))
+         return false;
+      break;
+
+   case GL_RENDERBUFFER:
+      if (!ctx->Extensions.ARB_framebuffer_object)
+         return false;
+      break;
+
+   case GL_TEXTURE_2D_MULTISAMPLE:
+   case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+      if (!(ctx->Extensions.ARB_texture_multisample && _mesa_is_desktop_gl(ctx))
+          && !_mesa_is_gles31(ctx))
+         return false;
+      break;
+
+   default:
+      unreachable("invalid target");
+   }
+
+   return true;
 }
 
 /* default implementation of QueryInternalFormat driverfunc, for
