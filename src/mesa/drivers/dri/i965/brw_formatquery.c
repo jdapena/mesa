@@ -84,8 +84,9 @@ brw_query_internal_format(struct gl_context *ctx, GLenum target,
       break;
    }
 
-   case GL_INTERNALFORMAT_SUPPORTED:
-   case GL_INTERNALFORMAT_PREFERRED:
+   /* Grouped queries that are handled by Mesa frontend, so they are
+    * unreachable here.
+    */
    case GL_INTERNALFORMAT_RED_SIZE:
    case GL_INTERNALFORMAT_GREEN_SIZE:
    case GL_INTERNALFORMAT_BLUE_SIZE:
@@ -110,6 +111,29 @@ brw_query_internal_format(struct gl_context *ctx, GLenum target,
    case GL_COLOR_RENDERABLE:
    case GL_DEPTH_RENDERABLE:
    case GL_STENCIL_RENDERABLE:
+   case GL_TEXTURE_COMPRESSED:
+   case GL_TEXTURE_COMPRESSED_BLOCK_WIDTH:
+   case GL_TEXTURE_COMPRESSED_BLOCK_HEIGHT:
+   case GL_TEXTURE_COMPRESSED_BLOCK_SIZE:
+   case GL_IMAGE_FORMAT_COMPATIBILITY_TYPE:
+   case GL_MIPMAP:
+   case GL_COLOR_ENCODING:
+   case GL_IMAGE_TEXEL_SIZE:
+   case GL_IMAGE_COMPATIBILITY_CLASS:
+   case GL_IMAGE_PIXEL_FORMAT:
+   case GL_IMAGE_PIXEL_TYPE:
+   case GL_VIEW_COMPATIBILITY_CLASS:
+   case GL_TESS_CONTROL_TEXTURE:
+   case GL_TESS_EVALUATION_TEXTURE:
+      unreachable("Query should have been handled by Mesa");
+      break;
+
+   case GL_INTERNALFORMAT_SUPPORTED:
+   case GL_INTERNALFORMAT_PREFERRED:
+   case GL_SIMULTANEOUS_TEXTURE_AND_DEPTH_TEST:
+   case GL_SIMULTANEOUS_TEXTURE_AND_STENCIL_TEST:
+   case GL_SIMULTANEOUS_TEXTURE_AND_DEPTH_WRITE:
+   case GL_SIMULTANEOUS_TEXTURE_AND_STENCIL_WRITE:
    case GL_FRAMEBUFFER_RENDERABLE:
    case GL_FRAMEBUFFER_RENDERABLE_LAYERED:
    case GL_FRAMEBUFFER_BLEND:
@@ -120,17 +144,13 @@ brw_query_internal_format(struct gl_context *ctx, GLenum target,
    case GL_TEXTURE_IMAGE_TYPE:
    case GL_GET_TEXTURE_IMAGE_FORMAT:
    case GL_GET_TEXTURE_IMAGE_TYPE:
-   case GL_MIPMAP:
    case GL_MANUAL_GENERATE_MIPMAP:
    case GL_AUTO_GENERATE_MIPMAP:
-   case GL_COLOR_ENCODING:
    case GL_SRGB_READ:
    case GL_SRGB_WRITE:
    case GL_SRGB_DECODE_ARB:
    case GL_FILTER:
    case GL_VERTEX_TEXTURE:
-   case GL_TESS_CONTROL_TEXTURE:
-   case GL_TESS_EVALUATION_TEXTURE:
    case GL_GEOMETRY_TEXTURE:
    case GL_FRAGMENT_TEXTURE:
    case GL_COMPUTE_TEXTURE:
@@ -140,22 +160,8 @@ brw_query_internal_format(struct gl_context *ctx, GLenum target,
    case GL_SHADER_IMAGE_LOAD:
    case GL_SHADER_IMAGE_STORE:
    case GL_SHADER_IMAGE_ATOMIC:
-   case GL_IMAGE_TEXEL_SIZE:
-   case GL_IMAGE_COMPATIBILITY_CLASS:
-   case GL_IMAGE_PIXEL_FORMAT:
-   case GL_IMAGE_PIXEL_TYPE:
-   case GL_IMAGE_FORMAT_COMPATIBILITY_TYPE:
-   case GL_SIMULTANEOUS_TEXTURE_AND_DEPTH_TEST:
-   case GL_SIMULTANEOUS_TEXTURE_AND_STENCIL_TEST:
-   case GL_SIMULTANEOUS_TEXTURE_AND_DEPTH_WRITE:
-   case GL_SIMULTANEOUS_TEXTURE_AND_STENCIL_WRITE:
-   case GL_TEXTURE_COMPRESSED:
-   case GL_TEXTURE_COMPRESSED_BLOCK_WIDTH:
-   case GL_TEXTURE_COMPRESSED_BLOCK_HEIGHT:
-   case GL_TEXTURE_COMPRESSED_BLOCK_SIZE:
    case GL_CLEAR_BUFFER:
    case GL_TEXTURE_VIEW:
-   case GL_VIEW_COMPATIBILITY_CLASS:
       /* @TODO: Handle all the different queries */
       _mesa_warning(ctx, "Unimplemented query");
       break;
