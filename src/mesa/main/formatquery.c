@@ -28,6 +28,7 @@
 #include "enums.h"
 #include "fbobject.h"
 #include "formatquery.h"
+#include "teximage.h"
 
 static bool
 _legal_parameters(struct gl_context *ctx, GLenum target, GLenum internalformat,
@@ -336,6 +337,49 @@ _set_default_response(GLenum pname, GLint buffer[16])
    default:
       unreachable("invalid 'pname'");
    }
+}
+
+static bool
+_is_target_supported(struct gl_context *ctx, GLenum target)
+{
+   switch(target){
+   case GL_TEXTURE_2D:
+   case GL_TEXTURE_3D:
+   case GL_TEXTURE_1D:
+   case GL_TEXTURE_1D_ARRAY:
+   case GL_TEXTURE_2D_ARRAY:
+   case GL_TEXTURE_CUBE_MAP:
+   case GL_TEXTURE_CUBE_MAP_ARRAY:
+   case GL_TEXTURE_RECTANGLE:
+      if (!(_mesa_legal_teximage_target(ctx, 1, target) ||
+            _mesa_legal_teximage_target(ctx, 2, target) ||
+            _mesa_legal_teximage_target(ctx, 3, target)))
+         return false;
+      break;
+
+   case GL_TEXTURE_BUFFER:
+      if (!(ctx->API == API_OPENGL_CORE &&
+            ctx->Extensions.ARB_texture_buffer_object))
+         return false;
+      break;
+
+   case GL_RENDERBUFFER:
+      if (!ctx->Extensions.ARB_framebuffer_object)
+         return false;
+      break;
+
+   case GL_TEXTURE_2D_MULTISAMPLE:
+   case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+      if (!(ctx->Extensions.ARB_texture_multisample && _mesa_is_desktop_gl(ctx))
+          && !_mesa_is_gles31(ctx))
+         return false;
+      break;
+
+   default:
+      unreachable("invalid target");
+   }
+
+   return true;
 }
 
 /* default implementation of QueryInternalFormat driverfunc, for
