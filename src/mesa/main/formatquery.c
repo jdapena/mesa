@@ -382,6 +382,60 @@ _is_target_supported(struct gl_context *ctx, GLenum target)
    return true;
 }
 
+static bool
+_is_internalformat_supported(struct gl_context *ctx, GLenum target,
+                             GLenum internalformat)
+{
+   switch(target){
+   case GL_TEXTURE_1D:
+   case GL_TEXTURE_1D_ARRAY:
+   case GL_TEXTURE_2D:
+   case GL_TEXTURE_2D_ARRAY:
+   case GL_TEXTURE_3D:
+   case GL_TEXTURE_CUBE_MAP:
+   case GL_TEXTURE_CUBE_MAP_ARRAY:
+   case GL_TEXTURE_RECTANGLE:
+      /* Based on what is done in the "teximage" method  */
+      if (_mesa_base_tex_format(ctx, internalformat) < 0)
+         return false;
+
+      /* additional checks for depth textures */
+      if (!_mesa_legal_texture_base_format_for_target(ctx, target, internalformat))
+         return false;
+
+      /* additional checks for compressed textures */
+      if (_mesa_is_compressed_format(ctx, internalformat) &&
+          (!_mesa_target_can_be_compressed(ctx, target, internalformat, NULL) ||
+           _mesa_format_no_online_compression(ctx, internalformat)))
+         return false;
+
+      break;
+   case GL_TEXTURE_2D_MULTISAMPLE:
+   case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+      /* Based on what it is done in "texture_image_multisample" method */
+      if (!_mesa_is_renderable_texture_format(ctx, internalformat))
+         return false;
+
+      break;
+   case GL_TEXTURE_BUFFER:
+      /* Based on what it is done in "_mesaTexBuffer" method */
+      if (_mesa_validate_texbuffer_format(ctx, internalformat) == MESA_FORMAT_NONE)
+         return false;
+
+      break;
+   case GL_RENDERBUFFER:
+      /* Based on what it is done in "renderbuffer_storage" method */
+      if (!_mesa_base_fbo_format(ctx, internalformat))
+         return false;
+
+      break;
+   default:
+      unreachable("bad target");
+   }
+
+   return true;
+}
+
 /* default implementation of QueryInternalFormat driverfunc, for
  * drivers not implementing ARB_internalformat_query2.
  */
@@ -431,7 +485,8 @@ _mesa_GetInternalformativ(GLenum target, GLenum internalformat, GLenum pname,
    /* The 'unsupported' response for each pname is the default answer */
    _set_default_response(pname, buffer);
 
-   if (!_is_target_supported(ctx, target))
+   if (!_is_target_supported(ctx, target) ||
+       !_is_internalformat_supported(ctx, target, internalformat))
       goto end;
 
    switch (pname) {
@@ -453,7 +508,8 @@ _mesa_GetInternalformativ(GLenum target, GLenum internalformat, GLenum pname,
                                       buffer);
       break;
    case GL_INTERNALFORMAT_SUPPORTED:
-      /* @TODO */
+      /* If we reach this point, the internalformat is supported */
+      buffer[0] = GL_TRUE;
       break;
 
    case GL_INTERNALFORMAT_PREFERRED:
