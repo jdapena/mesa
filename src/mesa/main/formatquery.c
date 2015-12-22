@@ -588,9 +588,7 @@ _mesa_query_internal_format_default(struct gl_context *ctx, GLenum target,
                                     GLenum internalFormat, GLenum pname,
                                     GLint *params)
 {
-   (void) ctx;
    (void) target;
-   (void) internalFormat;
 
    switch (pname) {
    case GL_SAMPLES:
@@ -605,6 +603,26 @@ _mesa_query_internal_format_default(struct gl_context *ctx, GLenum target,
    case GL_INTERNALFORMAT_PREFERRED:
       params[0] = internalFormat;
       break;
+
+   case GL_READ_PIXELS_FORMAT: {
+      GLenum base_format = _mesa_base_tex_format(ctx, internalFormat);
+      switch (base_format) {
+      case GL_STENCIL_INDEX:
+      case GL_DEPTH_COMPONENT:
+      case GL_DEPTH_STENCIL:
+      case GL_RED:
+      case GL_RGB:
+      case GL_BGR:
+      case GL_RGBA:
+      case GL_BGRA:
+         params[0] = base_format;
+         break;
+      default:
+         params[0] = GL_NONE;
+         break;
+      }
+      break;
+   }
 
    case GL_MANUAL_GENERATE_MIPMAP:
    case GL_AUTO_GENERATE_MIPMAP:
@@ -1078,12 +1096,9 @@ _mesa_GetInternalformativ(GLenum target, GLenum internalformat, GLenum pname,
       break;
 
    case GL_READ_PIXELS:
+   case GL_READ_PIXELS_FORMAT:
       ctx->Driver.QueryInternalFormat(ctx, target, internalformat, pname,
                                       buffer);
-      break;
-
-   case GL_READ_PIXELS_FORMAT:
-      /* @TODO */
       break;
 
    case GL_READ_PIXELS_TYPE:
