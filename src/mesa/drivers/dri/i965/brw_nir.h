@@ -125,6 +125,8 @@ void brw_nir_setup_arb_uniforms(nir_shader *shader, struct gl_program *prog,
 
 bool brw_nir_opt_peephole_ffma(nir_shader *shader);
 
+bool brw_nir_remap_64bits_attrs(nir_shader *shader);
+
 #ifdef __cplusplus
 }
 #endif

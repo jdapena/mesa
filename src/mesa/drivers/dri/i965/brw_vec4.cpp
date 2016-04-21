@@ -1604,6 +1604,8 @@ vec4_vs_visitor::setup_attributes(int payload_reg)
       }
    }
 
+   printf("nr_attributes: %d\n", nr_attributes);
+
    /* VertexID is stored by the VF as the last vertex element, but we
     * don't represent it with a flag in inputs_read, so we call it
     * VERT_ATTRIB_MAX.

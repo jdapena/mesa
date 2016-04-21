@@ -523,6 +523,10 @@ brw_postprocess_nir(nir_shader *nir,
       nir_print_shader(nir, stderr);
    }
 
+   if (devinfo->gen < 8) {
+      brw_nir_remap_64bits_attrs(nir);
+   }
+
    OPT_V(nir_convert_from_ssa, true);
 
    if (!is_scalar) {
