@@ -1590,10 +1590,17 @@ vec4_vs_visitor::setup_attributes(int payload_reg)
    memset(attribute_map, 0, sizeof(attribute_map));
 
    nr_attributes = 0;
+   unsigned offset = 0;
    for (int i = 0; i < VERT_ATTRIB_MAX; i++) {
       if (vs_prog_data->inputs_read & BITFIELD64_BIT(i)) {
-	 attribute_map[i] = payload_reg + nr_attributes;
+	 attribute_map[i + offset] = payload_reg + nr_attributes;
 	 nr_attributes++;
+
+         if (vs_prog_data->double_inputs_read & BITFIELD64_BIT(i)) {
+            attribute_map[i + offset + 1] = payload_reg + nr_attributes;
+            nr_attributes++;
+            offset++;
+         }
       }
    }
 
@@ -1614,7 +1621,7 @@ vec4_vs_visitor::setup_attributes(int payload_reg)
 
    lower_attributes_to_hw_regs(attribute_map, false /* interleaved */);
 
-   return payload_reg + vs_prog_data->nr_attributes;
+   return payload_reg + vs_prog_data->nr_attribute_slots;
 }
 
 int
@@ -2059,6 +2066,8 @@ brw_compile_vs(const struct brw_compiler *compiler, void *log_data,
                            use_legacy_snorm_formula, key->gl_attrib_wa_flags);
    brw_nir_lower_vue_outputs(shader, is_scalar);
    shader = brw_postprocess_nir(shader, compiler->devinfo, is_scalar);
+
+   prog_data->double_inputs_read = shader->info.double_inputs_read;
 
    const unsigned *assembly = NULL;
 
