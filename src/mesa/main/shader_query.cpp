@@ -881,6 +881,9 @@ _mesa_program_resource_location_index(struct gl_shader_program *shProg,
    if (!res || !(res->StageReferences & (1 << MESA_SHADER_FRAGMENT)))
       return -1;
 
+   if (strncmp(name, "gl_", 3) == 0)
+      return -1;
+
    return RESOURCE_VAR(res)->index;
 }
 
@@ -1236,7 +1239,8 @@ _mesa_program_resource_prop(struct gl_shader_program *shProg,
    case GL_LOCATION_INDEX:
       if (res->Type != GL_PROGRAM_OUTPUT)
          goto invalid_operation;
-      *val = RESOURCE_VAR(res)->index;
+      *val = _mesa_program_resource_location_index(shProg, res->Type,
+                                                   RESOURCE_VAR(res)->name);
       return 1;
 
    case GL_NUM_COMPATIBLE_SUBROUTINES:
