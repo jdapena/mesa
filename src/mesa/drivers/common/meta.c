@@ -3255,9 +3255,12 @@ _mesa_meta_GetTexSubImage(struct gl_context *ctx,
             packing.SkipRows = 0;
             dst = _mesa_image_address3d(&packing, pixels, width, height,
                                         format, type, slice, 0, 0);
-         }
-         else {
-            dst = pixels;
+         } else {
+            /* Account for PACK_SKIP_IMAGES option, if supported */
+            GLint imageStride =
+               _mesa_image_image_stride(&ctx->Pack,width,height,
+                                           format, type);
+            dst = (GLubyte *) pixels + imageStride * ctx->Pack.SkipImages;
          }
          result = decompress_texture_image(ctx, texImage, slice,
                                            xoffset, yoffset, width, height,
