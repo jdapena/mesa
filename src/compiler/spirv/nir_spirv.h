@@ -28,7 +28,7 @@
 #ifndef _NIR_SPIRV_H_
 #define _NIR_SPIRV_H_
 
-#include "nir/nir.h"
+#include "compiler/nir/nir.h"
 
 #ifdef __cplusplus
 extern "C" {
