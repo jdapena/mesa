@@ -2579,6 +2579,7 @@ struct gl_shader
    GLchar *Label;   /**< GL_KHR_debug */
    unsigned char sha1[20]; /**< SHA1 hash of pre-processed source */
    GLboolean DeletePending;
+   GLboolean SpirVBinary;
    bool IsES;              /**< True if this shader uses GLSL ES */
 
    enum gl_compile_status CompileStatus;
