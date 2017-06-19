@@ -112,6 +112,8 @@ LIBGLSL_FILES = \
 	glsl/lower_output_reads.cpp \
 	glsl/lower_shared_reference.cpp \
 	glsl/lower_ubo_reference.cpp \
+	glsl/nir_linker.cpp \
+	glsl/nir_linker.h \
 	glsl/opt_algebraic.cpp \
 	glsl/opt_array_splitting.cpp \
 	glsl/opt_conditional_discard.cpp \
