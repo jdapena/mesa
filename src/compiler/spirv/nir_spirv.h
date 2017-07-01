@@ -59,6 +59,7 @@ struct spirv_to_nir_options {
       bool int64;
       bool multiview;
       bool variable_pointers;
+      bool storage_16bit;
    } caps;
 
    struct {
