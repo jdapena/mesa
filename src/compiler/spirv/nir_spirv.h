@@ -40,6 +40,7 @@ struct nir_spirv_specialization {
       uint32_t data32;
       uint64_t data64;
    };
+   bool defined_on_module;
 };
 
 struct nir_spirv_supported_capabilities {
@@ -53,6 +54,10 @@ struct nir_spirv_supported_capabilities {
    bool multiview;
    bool variable_pointers;
 };
+
+bool gl_spirv_validation(const uint32_t *words, size_t word_count,
+                         struct nir_spirv_specialization *spec, unsigned num_spec,
+                         gl_shader_stage stage, const char *entry_point_name);
 
 nir_function *spirv_to_nir(const uint32_t *words, size_t word_count,
                            struct nir_spirv_specialization *specializations,
