@@ -80,6 +80,10 @@ void
 _mesa_spirv_link_shaders(struct gl_context *ctx,
                          struct gl_shader_program *prog);
 
+void
+_mesa_spirv_build_program_resource_list(struct gl_context *ctx,
+                                        struct gl_shader_program *prog);
+
 /**
  * \name API functions
  */
