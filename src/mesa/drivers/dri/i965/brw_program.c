@@ -31,6 +31,7 @@
 
 #include <pthread.h>
 #include "main/imports.h"
+#include "main/glspirv.h"
 #include "program/prog_parameter.h"
 #include "program/prog_print.h"
 #include "program/prog_to_nir.h"
@@ -73,9 +74,18 @@ brw_create_nir(struct brw_context *brw,
       ctx->Const.ShaderCompilerOptions[stage].NirOptions;
    nir_shader *nir;
 
-   /* First, lower the GLSL IR or Mesa IR to NIR */
+   /* First, lower the GLSL/Mesa IR or SPIR-V to NIR */
    if (shader_prog) {
-      nir = glsl_to_nir(shader_prog, stage, options);
+      bool is_spirv_shader =
+         (shader_prog->_LinkedShaders[stage]->spirv_data != NULL);
+
+      if (!is_spirv_shader) {
+         nir = glsl_to_nir(shader_prog, stage, options);
+      } else {
+         nir = _mesa_spirv_to_nir(ctx, shader_prog, stage, options);
+      }
+      assert (nir);
+
       nir_remove_dead_variables(nir, nir_var_shader_in | nir_var_shader_out);
       nir_lower_returns(nir);
       nir_validate_shader(nir);
