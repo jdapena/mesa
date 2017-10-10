@@ -34,6 +34,7 @@
 #include "get.h"
 #include "macros.h"
 #include "mtypes.h"
+#include "spirvextensions.h"
 #include "state.h"
 #include "texcompress.h"
 #include "texstate.h"
@@ -1150,6 +1151,11 @@ find_custom_value(struct gl_context *ctx, const struct value_desc *d, union valu
             v->value_int_4[3] = info.avail_staging_memory;
          }
       }
+      break;
+
+   /* ARB_spirv_extensions */
+   case GL_NUM_SPIR_V_EXTENSIONS:
+      v->value_int = _mesa_get_spirv_extension_count(ctx);
       break;
    }
 }

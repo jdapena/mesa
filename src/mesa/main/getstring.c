@@ -32,6 +32,7 @@
 #include "extensions.h"
 #include "mtypes.h"
 #include "macros.h"
+#include "spirvextensions.h"
 
 /**
  * Return the string for a glGetString(GL_SHADING_LANGUAGE_VERSION) query.
@@ -184,6 +185,12 @@ _mesa_GetStringi(GLenum name, GLuint index)
          return (const GLubyte *) 0;
       }
       return _mesa_get_enabled_extension(ctx, index);
+   case GL_SPIR_V_EXTENSIONS:
+      if (index >= _mesa_get_spirv_extension_count(ctx)) {
+         _mesa_error(ctx, GL_INVALID_VALUE, "glGetStringi(index=%u)", index);
+         return (const GLubyte *) 0;
+      }
+      return _mesa_get_enabled_spirv_extension(ctx, index);
    default:
       _mesa_error(ctx, GL_INVALID_ENUM, "glGetStringi");
       return (const GLubyte *) 0;
