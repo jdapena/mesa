@@ -132,7 +132,7 @@ anv_shader_compile_to_nir(struct anv_pipeline *pipeline,
       }
    }
 
-   const struct nir_spirv_supported_extensions supported_ext = {
+   const struct nir_spirv_supported_capabilities supported_cap = {
       .float64 = device->instance->physicalDevice.info.gen >= 8,
       .int64 = device->instance->physicalDevice.info.gen >= 8,
       .tessellation = true,
@@ -145,7 +145,7 @@ anv_shader_compile_to_nir(struct anv_pipeline *pipeline,
    nir_function *entry_point =
       spirv_to_nir(spirv, module->size / 4,
                    spec_entries, num_spec_entries,
-                   stage, entrypoint_name, &supported_ext, nir_options);
+                   stage, entrypoint_name, &supported_cap, nir_options);
    nir_shader *nir = entry_point->shader;
    assert(nir->info.stage == stage);
    nir_validate_shader(nir);

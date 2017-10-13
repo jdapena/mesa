@@ -42,7 +42,7 @@ struct nir_spirv_specialization {
    };
 };
 
-struct nir_spirv_supported_extensions {
+struct nir_spirv_supported_capabilities {
    bool float64;
    bool image_ms_array;
    bool tessellation;
@@ -58,7 +58,7 @@ nir_function *spirv_to_nir(const uint32_t *words, size_t word_count,
                            struct nir_spirv_specialization *specializations,
                            unsigned num_specializations,
                            gl_shader_stage stage, const char *entry_point_name,
-                           const struct nir_spirv_supported_extensions *ext,
+                           const struct nir_spirv_supported_capabilities *cap,
                            const nir_shader_compiler_options *options);
 
 #ifdef __cplusplus

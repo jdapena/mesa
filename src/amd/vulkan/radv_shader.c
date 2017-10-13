@@ -196,7 +196,7 @@ radv_shader_compile_to_nir(struct radv_device *device,
 					spec_entries[i].data32 = *(const uint32_t *)data;
 			}
 		}
-		const struct nir_spirv_supported_extensions supported_ext = {
+		const struct nir_spirv_supported_capabilities supported_cap = {
 			.draw_parameters = true,
 			.float64 = true,
 			.image_read_without_format = true,
@@ -208,7 +208,7 @@ radv_shader_compile_to_nir(struct radv_device *device,
 		};
 		entry_point = spirv_to_nir(spirv, module->size / 4,
 					   spec_entries, num_spec_entries,
-					   stage, entrypoint_name, &supported_ext, &nir_options);
+					   stage, entrypoint_name, &supported_cap, &nir_options);
 		nir = entry_point->shader;
 		assert(nir->info.stage == stage);
 		nir_validate_shader(nir);
