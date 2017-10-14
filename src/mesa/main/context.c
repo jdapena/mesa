@@ -1380,6 +1380,7 @@ _mesa_free_context_data( struct gl_context *ctx )
    }
 
    free(ctx->Const.SpirVCapabilities);
+   free(ctx->Const.SpirVExtensions);
 }
 
 
