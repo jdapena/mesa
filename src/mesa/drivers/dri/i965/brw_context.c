@@ -75,6 +75,7 @@
 #include "util/debug.h"
 #include "isl/isl.h"
 
+#include "compiler/spirv/nir_spirv.h"
 /***************************************
  * Mesa's Driver Functions
  ***************************************/
@@ -329,6 +330,24 @@ brw_init_driver_functions(struct brw_context *brw,
 
    if (devinfo->gen >= 6)
       functions->GetSamplePosition = gen6_get_sample_position;
+}
+
+static struct nir_spirv_supported_capabilities *
+brw_initialize_spirv_supported_capabilities(struct brw_context *brw)
+{
+   const struct gen_device_info *devinfo = &brw->screen->devinfo;
+   struct nir_spirv_supported_capabilities *cap =
+      MALLOC_STRUCT(nir_spirv_supported_capabilities);
+
+   cap->float64 = devinfo->gen >= 8;
+   cap->int64 = devinfo->gen >= 8;
+   cap->tessellation = true;
+   cap->draw_parameters = true;
+   cap->image_write_without_format = true;
+   cap->multiview = true;
+   cap->variable_pointers = true;
+
+   return cap;
 }
 
 static void
@@ -697,6 +716,10 @@ brw_initialize_context_constants(struct brw_context *brw)
 
    if (!(ctx->Const.ContextFlags & GL_CONTEXT_FLAG_DEBUG_BIT))
       ctx->Const.AllowMappedBuffersDuringExecution = true;
+
+   /* GL_ARB_gl_spirv */
+   ctx->Const.SpirVCapabilities =
+      brw_initialize_spirv_supported_capabilities(brw);
 }
 
 static void
