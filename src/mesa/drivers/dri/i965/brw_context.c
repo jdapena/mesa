@@ -75,6 +75,7 @@
 #include "util/debug.h"
 #include "isl/isl.h"
 
+#include "compiler/spirv/nir_spirv.h"
 /***************************************
  * Mesa's Driver Functions
  ***************************************/
@@ -336,6 +337,21 @@ brw_init_driver_functions(struct brw_context *brw,
    functions->ProgramBinarySerializeDriverBlob = brw_program_serialize_nir;
    functions->ProgramBinaryDeserializeDriverBlob =
       brw_deserialize_program_binary;
+}
+
+static void
+brw_initialize_spirv_supported_capabilities(struct brw_context *brw)
+{
+   const struct gen_device_info *devinfo = &brw->screen->devinfo;
+   struct gl_context *ctx = &brw->ctx;
+
+   ctx->Const.SpirVCapabilities.float64 = devinfo->gen >= 8;
+   ctx->Const.SpirVCapabilities.int64 = devinfo->gen >= 8;
+   ctx->Const.SpirVCapabilities.tessellation = true;
+   ctx->Const.SpirVCapabilities.draw_parameters = true;
+   ctx->Const.SpirVCapabilities.image_write_without_format = true;
+   ctx->Const.SpirVCapabilities.multiview = true;
+   ctx->Const.SpirVCapabilities.variable_pointers = true;
 }
 
 static void
@@ -1071,6 +1087,10 @@ brwCreateContext(gl_api api,
 
    _mesa_override_extensions(ctx);
    _mesa_compute_version(ctx);
+
+   /* GL_ARB_gl_spirv */
+   if (ctx->Version >= 33)
+      brw_initialize_spirv_supported_capabilities(brw);
 
    _mesa_initialize_dispatch_tables(ctx);
    _mesa_initialize_vbo_vtxfmt(ctx);
