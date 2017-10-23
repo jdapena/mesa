@@ -2972,6 +2972,8 @@ vtn_handle_execution_mode(struct vtn_builder *b, struct vtn_value *entry_point,
          assert(b->shader->info.stage == MESA_SHADER_GEOMETRY);
          b->shader->info.gs.vertices_in =
             vertices_in_from_spv_execution_mode(mode->exec_mode);
+         b->shader->info.gs.input_primitive =
+            gl_primitive_from_spv_execution_mode(mode->exec_mode);
       }
       break;
 
