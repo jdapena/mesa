@@ -44,7 +44,6 @@ struct nir_spirv_specialization {
    bool defined_on_module;
 };
 
-
 bool gl_spirv_validation(const uint32_t *words, size_t word_count,
                          struct nir_spirv_specialization *spec, unsigned num_spec,
                          gl_shader_stage stage, const char *entry_point_name);
