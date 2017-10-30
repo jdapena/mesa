@@ -83,6 +83,9 @@ brw_create_nir(struct brw_context *brw,
          nir = glsl_to_nir(shader_prog, stage, options);
       } else {
          nir = _mesa_spirv_to_nir(ctx, shader_prog, stage, options);
+         if (stage == MESA_SHADER_COMPUTE) {
+            NIR_PASS_V(nir, brw_nir_lower_cs_shared);
+         }
       }
       assert (nir);
 
