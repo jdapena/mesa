@@ -601,6 +601,7 @@ typedef enum
    FRAG_RESULT_DATA5,
    FRAG_RESULT_DATA6,
    FRAG_RESULT_DATA7,
+   FRAG_RESULT_MAX, /**< Number of fragment program results */
 } gl_frag_result;
 
 const char *gl_frag_result_name(gl_frag_result result);
