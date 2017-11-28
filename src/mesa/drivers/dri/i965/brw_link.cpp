@@ -221,42 +221,6 @@ update_xfb_info(struct gl_transform_feedback_info *xfb_info,
    }
 }
 
-static void
-nir_link_assign_atomic_counter_resources(struct gl_context *ctx,
-                                         struct gl_shader_program *prog)
-{
-   for (unsigned i = 0; i < MESA_SHADER_STAGES; i++) {
-      struct gl_linked_shader *sh = prog->_LinkedShaders[i];
-      if (!sh)
-         continue;
-
-      sh->ir = new(sh) exec_list;
-
-      nir_foreach_variable(var, &sh->Program->nir->uniforms)
-         nir_to_ir_variable(NULL, prog, sh, var);
-   }
-
-   link_assign_atomic_counter_resources(ctx, prog);
-
-   /* This link is needed mostly to compute several variables. Some of them
-    * need to be feed back to nir, to avoid any future call to nir_gather_info
-    * overwriting it
-    * FIXME: perhaps we need a reverse to brw_shader_gather_info
-    */
-   for (unsigned stage = 0; stage < MESA_SHADER_STAGES; stage++) {
-      struct gl_linked_shader *sh = prog->_LinkedShaders[stage];
-
-      if (!sh || !sh->Program || !sh->Program->nir)
-         continue;
-
-      nir_shader *nir = sh->Program->nir;
-
-      /* FIXME: for now we copy the info we found we need on the tests. See
-       * previous comment about a reverse brw_shader_gather_info */
-      nir->info.num_abos = sh->Program->info.num_abos;
-   }
-}
-
 extern "C" GLboolean
 brw_link_shader(struct gl_context *ctx, struct gl_shader_program *shProg)
 {
