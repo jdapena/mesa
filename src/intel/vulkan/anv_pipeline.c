@@ -870,7 +870,7 @@ anv_pipeline_compile_fs(struct anv_pipeline *pipeline,
       }
 
       unsigned num_rts = 0;
-      const int max_rt = FRAG_RESULT_MAX - FRAG_RESULT_DATA0;
+      const int max_rt = FRAG_RESULT_DATA7 - FRAG_RESULT_DATA0 + 1;
       struct anv_pipeline_binding rt_bindings[max_rt];
       nir_function_impl *impl = nir_shader_get_entrypoint(nir);
       int rt_to_bindings[max_rt];
