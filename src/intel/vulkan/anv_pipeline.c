@@ -874,14 +874,14 @@ anv_pipeline_compile_fs(struct anv_pipeline *pipeline,
       struct anv_pipeline_binding rt_bindings[max_rt];
       nir_function_impl *impl = nir_shader_get_entrypoint(nir);
       int rt_to_bindings[max_rt];
-      memset(rt_to_bindings, -1, sizeof(int) * max_rt);
+      memset(rt_to_bindings, -1, sizeof(rt_to_bindings));
 
       /* Set new, compacted, location */
       nir_foreach_variable_safe(var, &nir->outputs) {
          if (var->data.location < FRAG_RESULT_DATA0)
             continue;
 
-         unsigned rt = var->data.location - FRAG_RESULT_DATA0;
+         const unsigned rt = var->data.location - FRAG_RESULT_DATA0;
          if (rt_to_bindings[rt] != -1 || rt >= key.nr_color_regions)
             continue;
          const unsigned array_len =
