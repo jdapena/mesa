@@ -890,7 +890,7 @@ anv_pipeline_compile_fs(struct anv_pipeline *pipeline,
 
          for (unsigned i = 0; i < array_len; i++) {
             rt_to_bindings[rt + i] = num_rts + i;
-            rt_bindings[rt_to_bindings[rt + i] = (struct anv_pipeline_binding) {
+            rt_bindings[rt_to_bindings[rt + i]] = (struct anv_pipeline_binding) {
                .set = ANV_DESCRIPTOR_SET_COLOR_ATTACHMENTS,
                .binding = 0,
                .index = rt + i,
