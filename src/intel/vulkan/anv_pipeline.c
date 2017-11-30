@@ -875,29 +875,38 @@ anv_pipeline_compile_fs(struct anv_pipeline *pipeline,
       nir_function_impl *impl = nir_shader_get_entrypoint(nir);
       int rt_to_bindings[max_rt];
       memset(rt_to_bindings, -1, sizeof(rt_to_bindings));
+      int rt_used[max_rt];
+      memset(rt_used, 0, sizeof(rt_used));
 
-      /* Set new, compacted, location */
+      /* Flag used render targets */
       nir_foreach_variable_safe(var, &nir->outputs) {
          if (var->data.location < FRAG_RESULT_DATA0)
             continue;
 
          const unsigned rt = var->data.location - FRAG_RESULT_DATA0;
-         if (rt_to_bindings[rt] != -1 || rt >= key.nr_color_regions)
+         if (rt_used[rt] || rt >= key.nr_color_regions)
             continue;
+
          const unsigned array_len =
             glsl_type_is_array(var->type) ? glsl_get_length(var->type) : 1;
-         assert(num_rts + array_len <= max_rt);
+         assert(rt + array_len <= max_rt);
 
-         for (unsigned i = 0; i < array_len; i++) {
-            rt_to_bindings[rt + i] = num_rts + i;
-            rt_bindings[rt_to_bindings[rt + i]] = (struct anv_pipeline_binding) {
-               .set = ANV_DESCRIPTOR_SET_COLOR_ATTACHMENTS,
-               .binding = 0,
-               .index = rt + i,
-            };
-         }
+         for (unsigned i = 0; i < array_len; i++)
+            rt_used[i] = true;
+      }
 
-         num_rts += array_len;
+      /* Set new, compacted, location */
+      for (unsigned i = 0; i < max_rt; i++) {
+         if (!rt_used[i])
+            continue;
+
+         rt_to_bindings[i] = num_rts;
+         rt_bindings[rt_to_bindings[i]] = (struct anv_pipeline_binding) {
+            .set = ANV_DESCRIPTOR_SET_COLOR_ATTACHMENTS,
+            .binding = 0,
+            .index = i,
+         };
+         num_rts++;
       }
 
       nir_foreach_variable_safe(var, &nir->outputs) {
