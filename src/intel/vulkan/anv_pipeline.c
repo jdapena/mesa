@@ -888,10 +888,9 @@ anv_pipeline_compile_fs(struct anv_pipeline *pipeline,
             glsl_type_is_array(var->type) ? glsl_get_length(var->type) : 1;
          assert(num_rts + array_len <= max_rt);
 
-         rt_to_bindings[rt] = num_rts;
-
          for (unsigned i = 0; i < array_len; i++) {
-            rt_bindings[rt_to_bindings[rt] + i] = (struct anv_pipeline_binding) {
+            rt_to_bindings[rt + i] = num_rts + i;
+            rt_bindings[rt_to_bindings[rt + i] = (struct anv_pipeline_binding) {
                .set = ANV_DESCRIPTOR_SET_COLOR_ATTACHMENTS,
                .binding = 0,
                .index = rt + i,
