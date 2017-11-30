@@ -904,7 +904,7 @@ anv_pipeline_compile_fs(struct anv_pipeline *pipeline,
          if (var->data.location < FRAG_RESULT_DATA0)
             continue;
 
-         unsigned rt = var->data.location - FRAG_RESULT_DATA0;
+         const unsigned rt = var->data.location - FRAG_RESULT_DATA0;
          if (rt >= key.nr_color_regions) {
             /* Out-of-bounds, throw it away */
             var->data.mode = nir_var_local;
