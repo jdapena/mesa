@@ -3945,12 +3945,10 @@ vtn_handle_body_instruction(struct vtn_builder *b, SpvOp opcode,
    return true;
 }
 
-nir_function *
-spirv_to_nir(const uint32_t *words, size_t word_count,
-             struct nir_spirv_specialization *spec, unsigned num_spec,
-             gl_shader_stage stage, const char *entry_point_name,
-             const struct spirv_to_nir_options *options,
-             const nir_shader_compiler_options *nir_options)
+struct vtn_builder*
+vtn_builder_create(const uint32_t *words, size_t word_count,
+                   gl_shader_stage stage, const char *entry_point_name,
+                   const struct spirv_to_nir_options *options)
 {
    /* Initialize the stn_builder object */
    struct vtn_builder *b = rzalloc(NULL, struct vtn_builder);
@@ -3964,14 +3962,6 @@ spirv_to_nir(const uint32_t *words, size_t word_count,
    b->entry_point_name = entry_point_name;
    b->options = options;
 
-   /* See also _vtn_fail() */
-   if (setjmp(b->fail_jump)) {
-      ralloc_free(b);
-      return NULL;
-   }
-
-   const uint32_t *word_end = words + word_count;
-
    /* Handle the SPIR-V header (first 4 dwords)  */
    vtn_assert(word_count > 5);
 
@@ -3981,10 +3971,36 @@ spirv_to_nir(const uint32_t *words, size_t word_count,
    unsigned value_id_bound = words[3];
    vtn_assert(words[4] == 0);
 
-   words+= 5;
-
    b->value_id_bound = value_id_bound;
    b->values = rzalloc_array(b, struct vtn_value, value_id_bound);
+
+   return b;
+}
+
+nir_function *
+spirv_to_nir(const uint32_t *words, size_t word_count,
+             struct nir_spirv_specialization *spec, unsigned num_spec,
+             gl_shader_stage stage, const char *entry_point_name,
+             const struct spirv_to_nir_options *options,
+             const nir_shader_compiler_options *nir_options)
+
+{
+   const uint32_t *word_end = words + word_count;
+
+   struct vtn_builder *b = vtn_builder_create(words, word_count,
+                                              stage, entry_point_name,
+                                              options);
+
+   if (b == NULL)
+      return NULL;
+
+   /* See also _vtn_fail() */
+   if (setjmp(b->fail_jump)) {
+      ralloc_free(b);
+      return NULL;
+   }
+
+   words+= 5;
 
    /* Handle all the preamble instructions */
    words = vtn_foreach_instruction(b, words, word_end,
