@@ -145,6 +145,7 @@ create_version_string(struct gl_context *ctx, const char *prefix)
  * 3.1FC: select a Core+Forward Compatible profile with GL version 3.1
  * 3.2: select a Core profile with GL version 3.2
  * 3.2FC: select a Core+Forward Compatible profile with GL version 3.2
+ * 3.2COMPAT: select a compatibility (non-Core) profile with GL version 3.2
  *
  * Example uses of MESA_GL_VERSION_OVERRIDE:
  *
