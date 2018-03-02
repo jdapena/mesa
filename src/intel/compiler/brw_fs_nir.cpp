@@ -762,6 +762,38 @@ fs_visitor::nir_emit_alu(const fs_builder &bld, nir_alu_instr *instr)
    case nir_op_f2f64:
    case nir_op_f2i64:
    case nir_op_f2u64:
+      /* BDW PRM, vol02, Command Reference Instructions, mov - MOVE:
+       *
+       *   "There is no direct conversion from HF to DF or DF to HF.
+       *    Use two instructions and F (Float) as an intermediate type.
+       *
+       *    There is no direct conversion from HF to Q/UQ or Q/UQ to HF.
+       *    Use two instructions and F (Float) or a word integer type
+       *    or a DWord integer type as an intermediate type."
+       */
+      if (nir_src_bit_size(instr->src[0].src) == 16) {
+         brw_reg_type type;
+         switch (instr->op) {
+         case nir_op_f2f64:
+            type = BRW_REGISTER_TYPE_F;
+            break;
+         case nir_op_f2i64:
+            type = BRW_REGISTER_TYPE_D;
+            break;
+         case nir_op_f2u64:
+            type = BRW_REGISTER_TYPE_UD;
+            break;
+         default:
+            unreachable("Not supported");
+         }
+         fs_reg tmp = bld.vgrf(type, 1);
+         inst = bld.MOV(tmp, op[0]);
+         inst->saturate = instr->dest.saturate;
+         inst = bld.MOV(result, tmp);
+         inst->saturate = instr->dest.saturate;
+         break;
+      }
+      /* fallthrough */
    case nir_op_i2f64:
    case nir_op_i2i64:
    case nir_op_u2f64:
