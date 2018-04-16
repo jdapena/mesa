@@ -578,7 +578,9 @@ vtn_handle_alu(struct vtn_builder *b, SpvOp opcode,
       break;
 
    case SpvOpIsInf: {
-      nir_ssa_def *inf = nir_imm_floatN_t(&b->nb, INFINITY, src[0]->bit_size);
+      nir_ssa_def *inf = src[0]->bit_size > 16 ?
+         nir_imm_floatN_t(&b->nb, INFINITY, src[0]->bit_size) :
+         nir_imm_intN_t(&b->nb, 0x7c00, 16);
       val->ssa->def = nir_ieq(&b->nb, nir_fabs(&b->nb, src[0]), inf);
       break;
    }
