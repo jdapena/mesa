@@ -1525,7 +1525,14 @@ fs_visitor::nir_emit_alu(const fs_builder &bld, nir_alu_instr *instr)
       break;
 
    case nir_op_ffma:
-      inst = bld.MAD(result, op[2], op[1], op[0]);
+      /* 3-src MAD doesn't support 16-bit operands */
+      if (nir_dest_bit_size(instr->dest.dest) >= 32) {
+         inst = bld.MAD(result, op[2], op[1], op[0]);
+      } else {
+         fs_reg tmp = bld.vgrf(BRW_REGISTER_TYPE_HF);
+         bld.MUL(tmp, op[1], op[0]);
+         inst = bld.ADD(result, tmp, op[2]);
+      }
       inst->saturate = instr->dest.saturate;
       break;
 
