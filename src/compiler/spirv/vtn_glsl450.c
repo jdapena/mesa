@@ -540,11 +540,17 @@ handle_glsl450_alu(struct vtn_builder *b, enum GLSLstd450 entrypoint,
 
    switch (entrypoint) {
    case GLSLstd450Radians:
-      val->ssa->def = nir_fmul(nb, src[0], nir_imm_float(nb, 0.01745329251));
+      val->ssa->def = nir_fmul(nb, src[0],
+                               nir_imm_floatN_t(nb, 0.01745329251,
+                                                src[0]->bit_size));
       return;
+
    case GLSLstd450Degrees:
-      val->ssa->def = nir_fmul(nb, src[0], nir_imm_float(nb, 57.2957795131));
+      val->ssa->def = nir_fmul(nb, src[0],
+                               nir_imm_floatN_t(nb, 57.2957795131,
+                                                src[0]->bit_size));
       return;
+
    case GLSLstd450Tan:
       val->ssa->def = nir_fdiv(nb, nir_fsin(nb, src[0]),
                                nir_fcos(nb, src[0]));
