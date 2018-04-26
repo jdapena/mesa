@@ -599,6 +599,8 @@ lower_bit_size_callback(const nir_alu_instr *alu, void *data)
    if (alu->dest.dest.ssa.bit_size != 16)
       return 0;
 
+   const struct brw_compiler *compiler = (const struct brw_compiler *) data;
+
    switch (alu->op) {
    case nir_op_idiv:
    case nir_op_imod:
@@ -611,6 +613,15 @@ lower_bit_size_callback(const nir_alu_instr *alu, void *data)
    case nir_op_fround_even:
    case nir_op_ftrunc:
       return 32;
+   case nir_op_frcp:
+   case nir_op_frsq:
+   case nir_op_fsqrt:
+   case nir_op_fpow:
+   case nir_op_fexp2:
+   case nir_op_flog2:
+   case nir_op_fsin:
+   case nir_op_fcos:
+      return compiler->devinfo->gen < 9 ? 32 : 0;
    default:
       return 0;
    }
@@ -669,7 +680,7 @@ brw_preprocess_nir(const struct brw_compiler *compiler, nir_shader *nir)
 
    nir = brw_nir_optimize(nir, compiler, is_scalar);
 
-   nir_lower_bit_size(nir, lower_bit_size_callback, NULL);
+   nir_lower_bit_size(nir, lower_bit_size_callback, (void *)compiler);
 
    if (is_scalar) {
       OPT(nir_lower_load_const_to_scalar);
